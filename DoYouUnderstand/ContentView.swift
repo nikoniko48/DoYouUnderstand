@@ -8,9 +8,29 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var router = NavigationManager()
+    
     var body: some View {
-        NavigationStack {
-            
+        NavigationStack(path: $router.path) {
+            HomeView { output in
+                router.handle(.dashboard(output))
+            }
+            .navigationDestination(for: Route.self) { route in
+                switch route {
+                case .onboarding:
+                    OnboardingView()
+                case .dashboard:
+                    HomeView { output in
+                        router.handle(.dashboard(output))
+                    }
+                case .input:
+                    InputView()
+                case .explenation:
+                    ExplanationView()
+                case .response:
+                    ResponseView()
+                }
+            }
         }
     }
 }
