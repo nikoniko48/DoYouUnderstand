@@ -15,8 +15,10 @@ enum Theme {
             static let background = Color("AppBackground")
             static let backgroundSecondary = Color("AppBackgroundSecondary")
             static let primary = Color("AppPrimary")
+            static let primaryGradientEnd = Color("AppPrimaryGradientEnd")
+            static let borderSubtle = Color("BorderSubtle")
             static let accent = Color("AppAccent")
-            static let surface = Color("CardSurface")
+            static let cardSurface = Color("CardSurface")
             static let success = Color("SuccessGreen")
         }
         
@@ -41,10 +43,10 @@ enum Theme {
         static let screenTitle = Font.system(size: 18, weight: .bold)
         static let primaryButton = Font.system(size: 17, weight: .heavy)
         
-        static let bodyText = Font.system(size: 14, weight: .medium)
-        static let smallBody = Font.system(size: 13, weight: .regular)
+        static let bodyText = Font.system(size: 13, weight: .medium)
+        static let smallBody = Font.system(size: 12, weight: .regular)
         
-        static let badgeLabel = Font.system(size: 11, weight: .semibold)
-        static let tinyLabel = Font.system(size: 10, weight: .bold)
+        static let badgeLabel = Font.system(size: 11, weight: .heavy)
+        static let tinyLabel = Font.system(size: 10, weight: .heavy)
     }
 }

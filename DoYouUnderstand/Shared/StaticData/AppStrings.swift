@@ -7,11 +7,14 @@
 
 import SwiftUI
 
-enum Strings {
+extension StaticData {
     
-    enum Dashboard {
-        static let title = "DO YOU\nUNDERSTAND?!"
-        static let subtitle = "Text Analyzer"
-        static let recentAnalyses = "Recent Analyses"
+    enum Strings {
+        
+        enum Dashboard {
+            static let title = "DO YOU\nUNDERSTAND?!"
+            static let subtitle = "Text Analyzer"
+            static let recentAnalyses = "Recent Analyses"
+        }
     }
 }

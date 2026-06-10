@@ -37,7 +37,7 @@ class NavigationManager {
 extension NavigationManager {
     
     enum FlowEvent {
-        case dashboard(HomeViewModel.Output)
+        case dashboard(DashboardViewModel.Output)
         case input
         case explanation
         case response
@@ -56,7 +56,7 @@ extension NavigationManager {
         }
     }
     
-    func handleDashboard(_ output: HomeViewModel.Output) {
+    func handleDashboard(_ output: DashboardViewModel.Output) {
         switch output {
         case .input:
             navigate(to: .input)
