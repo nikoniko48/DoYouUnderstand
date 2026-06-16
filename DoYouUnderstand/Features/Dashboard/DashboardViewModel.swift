@@ -8,7 +8,7 @@
 import SwiftUI
 
 @Observable
-final class DashboardViewModel {
+final class DashboardViewModel: StateViewModelProtocol {
     
     var state: ViewState<StateModel> = .loading
     
@@ -26,14 +26,18 @@ final class DashboardViewModel {
     }
 }
 
+// MARK: - Output -
+
 extension DashboardViewModel {
     
     enum Output {
         case input
         case explanation
-        case response
+        case reply
     }
 }
+
+// MARK: - Actions -
 
 extension DashboardViewModel {
     
@@ -47,7 +51,7 @@ extension DashboardViewModel {
         enum Route {
             case input
             case explanation
-            case response
+            case reply
         }
     }
     
@@ -59,12 +63,14 @@ extension DashboardViewModel {
                 self?.output(.input)
             case .explanation:
                 break
-            case .response:
+            case .reply:
                 break
             }
         }
     }
 }
+
+// MARK: - Functions -
 
 extension DashboardViewModel {
     

@@ -7,9 +7,9 @@
 
 extension DashboardViewModel {
     
-    struct StateModel {
-        let history: [HistoryItem]
-        let scansRemaining: Int
+    struct StateModel: StateModelProtocol {
+        var history: [HistoryItem] = []
+        var scansRemaining: Int = .zero
     }
 }
 

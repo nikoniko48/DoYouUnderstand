@@ -24,10 +24,12 @@ struct ContentView: View {
                         router.handle(.dashboard(output))
                     }
                 case .input:
-                    InputView()
+                    InputView { output in
+                        router.handle(.input(output))
+                    }
                 case .explenation:
                     ExplanationView()
-                case .response:
+                case .reply:
                     ResponseView()
                 }
             }

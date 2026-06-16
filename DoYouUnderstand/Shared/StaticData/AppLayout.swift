@@ -13,7 +13,8 @@ extension StaticData {
         static let screenPadding: CGFloat = 16
         static let majorSpacing: CGFloat = 20
         static let cornerRadius: CGFloat = 16
-        static let buttonSize: CGSize = .init(width: 64, height: 64)
+        static let floatingButtonSize: CGSize = .init(width: 64, height: 64)
+        static let backButtonSize: CGSize = .init(width: 44, height: 44)
     }
     
     

@@ -112,7 +112,7 @@ extension DashboardView {
                         Image(systemName: "plus")
                             .font(Typography.hugeTitle)
                             .foregroundStyle(Colors.Text.title)
-                            .frame(width: StaticData.Layout.buttonSize.height, height: StaticData.Layout.buttonSize.width)
+                            .frame(width: StaticData.Layout.floatingButtonSize.height, height: StaticData.Layout.floatingButtonSize.width)
                             .background(
                                 LinearGradient(
                                     colors: [Colors.Main.primary, Colors.Main.primaryGradientEnd],
@@ -121,10 +121,6 @@ extension DashboardView {
                                 )
                             )
                             .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(Colors.Text.title.opacity(0.2), lineWidth: 1)
-                            )
                             .shadow(color: Colors.Main.accent.opacity(0.4), radius: 16, x: 0, y: 8)
                     }
                     .padding(.bottom, .space12)

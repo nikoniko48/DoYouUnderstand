@@ -38,19 +38,3 @@ struct HistoryItem: Identifiable {
         }
     }
 }
-
-extension HistoryItem {
-    
-    enum AnalysisType: String, Codable {
-        case explain
-        case reply
-    }
-    
-    enum Tone: String, Codable {
-        case anxious = "Anxious"
-        case condescending = "Condescending"
-        case overEager = "Over-Eager"
-        case passiveAggressive = "Passive-Aggressive"
-        case sarcastic = "Sarcastic"
-    }
-}

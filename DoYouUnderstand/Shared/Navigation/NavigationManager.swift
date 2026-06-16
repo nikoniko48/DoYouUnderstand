@@ -12,7 +12,7 @@ enum Route: Hashable {
     case dashboard
     case input
     case explenation
-    case response
+    case reply
 }
 
 @Observable
@@ -38,9 +38,9 @@ extension NavigationManager {
     
     enum FlowEvent {
         case dashboard(DashboardViewModel.Output)
-        case input
+        case input(InputViewModel.Output)
         case explanation
-        case response
+        case reply
     }
     
     func handle(_ event: FlowEvent) {
@@ -51,7 +51,7 @@ extension NavigationManager {
             break
         case .explanation:
             break
-        case .response:
+        case .reply:
             break
         }
     }
@@ -62,8 +62,19 @@ extension NavigationManager {
             navigate(to: .input)
         case .explanation:
             navigate(to: .explenation)
-        case .response:
-            navigate(to: .response)
+        case .reply:
+            navigate(to: .reply)
+        }
+    }
+    
+    func handleInput(_ output: InputViewModel.Output) {
+        switch output {
+        case .goBack:
+            popBack()
+        case .explain:
+            navigate(to: .explenation)
+        case .reply:
+            navigate(to: .reply)
         }
     }
 }
