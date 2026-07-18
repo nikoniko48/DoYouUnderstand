@@ -6,6 +6,4 @@
 //
 
 @MainActor
-protocol StateModelProtocol {
-    init()
-}
+protocol StateModelProtocol: AnyObject { }

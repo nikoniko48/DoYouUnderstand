@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 @Observable
 final class InputViewModel: StateViewModelProtocol {
     
+    var stateModel: StateModel
     var state: ViewState<StateModel> = .loading
     
     private(set) var actions: Actions = .init()
@@ -21,8 +23,9 @@ final class InputViewModel: StateViewModelProtocol {
     init(useMocks: Bool = false, output: @escaping (Output) -> Void) {
         self.useMocks = useMocks
         self.output = output
+        self.stateModel = StateModel()
         setActions()
-        self.state = .loaded(StateModel())
+        self.state = .loaded(stateModel)
     }
 }
 
@@ -44,13 +47,13 @@ extension InputViewModel {
     struct Actions {
         var onAnalyse: (() -> Void)?
         var onTap: ((Tap) -> Void)?
-        var onUpdateText: ((String) -> Void)?
+        var onPhotosSelected: (([PhotosPickerItem]) -> Void)?
+        var onRemovePhoto: ((UUID) -> Void)?
         
         enum Tap {
             case back
             case explain
             case reply
-            case choosePhoto
             case takePhoto
         }
     }
@@ -61,8 +64,12 @@ extension InputViewModel {
             self?.analyse()
         }
         
-        actions.onUpdateText = { [weak self] newText in
-            self?.updateText(newText)
+        actions.onPhotosSelected = { [weak self] items in
+            self?.loadPhotos(from: items)
+        }
+        
+        actions.onRemovePhoto = { [weak self] id in
+            self?.removePhoto(id: id)
         }
         
         actions.onTap = { [weak self] tap in
@@ -72,11 +79,9 @@ extension InputViewModel {
             case .back:
                 goBack()
             case .reply:
-                switchAnalysisType(type: .reply)
+                switchAnalysisType(to: .reply)
             case .explain:
-                switchAnalysisType(type: .explain)
-            case .choosePhoto:
-                choosePhoto()
+                switchAnalysisType(to: .explain)
             case .takePhoto:
                 takePhoto()
             }
@@ -89,26 +94,58 @@ extension InputViewModel {
 extension InputViewModel {
     
     private func analyse() {
+        // TODO: Backend Call Implementation
+        // Here is where you will send `stateModel.inputText` and `stateModel.selectedType` to your server.
+        print("Submitting text: \(stateModel.inputText) for type: \(stateModel.selectedType)")
         
+        // Once the backend returns success, route to the next screen based on selection:
+        switch stateModel.selectedType {
+        case .explain:
+            output(.explain)
+        case .reply:
+            output(.reply)
+        }
     }
     
     private func goBack() {
-        
+        output(.goBack)
     }
     
-    private func switchAnalysisType(type: AnalysisType) {
-        
-    }
-    
-    private func choosePhoto() {
-        
+    private func switchAnalysisType(to type: AnalysisType) {
+        // Updates the selection card UI
+        stateModel.selectedType = type
     }
     
     private func takePhoto() {
         
     }
     
-    private func updateText(_ newText: String) {
-        stateModel.inputText = newText
+    private func removePhoto(id: UUID) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            stateModel.images.removeAll { $0.id == id }
+        }
+    }
+    
+    private func loadPhotos(from items: [PhotosPickerItem]) {
+        stateModel.isLoaderPresented = true
+        
+        Task {
+            let decodedImages = await Task.detached {
+                var loaded: [PickedImage] = []
+                for item in items {
+                    if let data = try? await item.loadTransferable(type: Data.self),
+                       let uiImage = UIImage(data: data) {
+                        loaded.append(PickedImage(image: uiImage))
+                    }
+                }
+                return loaded
+            }.value
+            
+            await MainActor.run {
+                let combined = self.stateModel.images + decodedImages
+                self.stateModel.images = Array(combined.prefix(self.stateModel.maxPhotos))
+                self.stateModel.isLoaderPresented = false
+            }
+        }
     }
 }

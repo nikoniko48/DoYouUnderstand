@@ -10,6 +10,7 @@ import SwiftUI
 @Observable
 final class DashboardViewModel: StateViewModelProtocol {
     
+    var stateModel: StateModel
     var state: ViewState<StateModel> = .loading
     
     private(set) var actions: Actions = .init()
@@ -21,6 +22,7 @@ final class DashboardViewModel: StateViewModelProtocol {
     init(useMocks: Bool = false, output: @escaping (Output) -> Void) {
         self.useMocks = useMocks
         self.output = output
+        self.stateModel = StateModel()
         getHistoryItems()
         setActions()
     }
@@ -75,15 +77,13 @@ extension DashboardViewModel {
 extension DashboardViewModel {
     
     private func getHistoryItems() {
-        guard !useMocks else {
-            let mockStateModel = StateModel(
-                history: HistoryItem.mockList,
-                scansRemaining: 7
-            )
-            self.state = .loaded(mockStateModel)
-            return
+        if useMocks {
+            stateModel.history = HistoryItem.mockList
+            stateModel.scansRemaining = 7
+            
+            state = .loaded(stateModel)
+        } else {
+            // TODO: Live implementation
         }
-        
-        // TODO: Live implementation
     }
 }

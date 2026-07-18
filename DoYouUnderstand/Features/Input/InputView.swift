@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct InputView: View {
     
@@ -28,6 +29,7 @@ struct InputView: View {
                 actions: viewModel.actions
             )
         }
+        .navigationBarBackButtonHidden()
     }
 }
 
@@ -35,137 +37,217 @@ extension InputView {
     
     struct ContentView: View {
         
-        let stateModel: InputViewModel.StateModel
+        @Bindable var stateModel: InputViewModel.StateModel
         let actions: InputViewModel.Actions
         
+        @FocusState private var isFocused: Bool
+        
         var body: some View {
-            VStack(spacing: .space24) {
-                
-                // MARK: - Header -
-                
-                HStack(spacing: .space16) {
-                    Button {
-                        actions.onTap?(.back)
-                    } label: {
-                        Image(systemName: "arrow.left")
-                            .font(Typography.bodyText)
-                            .scaleEffect(1.2)
-                            .foregroundStyle(Colors.Text.highlight)
-                            .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                            .background(Colors.Main.cardSurface)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                            )
-                    }
-                    
-                    VStack(alignment: .leading, spacing: .space2) {
-                        Text("NEW ANALYSIS")
-                            .font(Typography.badgeLabel)
-                            .foregroundStyle(Colors.Text.muted)
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack(spacing: .space24) {
                         
-                        Text("Paste your text")
-                            .font(Typography.screenTitle)
-                            .foregroundStyle(Colors.Text.title)
-                    }
-                    
-                    Spacer()
-                }
-                
-                
-                // MARK: - Text input area -
-                
-                VStack(spacing: .space16) {
-                    ZStack(alignment: .topLeading) {
+                        // MARK: - Header -
                         
-                        if stateModel.inputText.isEmpty {
-                            Text("Paste text or write here...")
-                                .font(Typography.bodyText)
-                                .foregroundStyle(Colors.Text.muted)
-                                .padding(.horizontal, .space16)
-                                .padding(.vertical, .space16)
-                                .allowsHitTesting(false)
+                        HStack(spacing: .space16) {
+                            Button {
+                                actions.onTap?(.back)
+                            } label: {
+                                Image(systemName: "arrow.left")
+                                    .font(Typography.bodyText)
+                                    .scaleEffect(1.2)
+                                    .foregroundStyle(Colors.Text.highlight)
+                                    .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
+                                    .background(Colors.Main.cardSurface)
+                                    .clipShape(Circle())
+                                    .overlay(
+                                        Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                                    )
+                            }
+                            
+                            VStack(alignment: .leading, spacing: .space2) {
+                                Text("NEW ANALYSIS")
+                                    .font(Typography.badgeLabel)
+                                    .foregroundStyle(Colors.Text.muted)
+                                
+                                Text("Paste your text")
+                                    .font(Typography.screenTitle)
+                                    .foregroundStyle(Colors.Text.title)
+                            }
+                            
+                            Spacer()
                         }
                         
-                        TextField("", text: Binding(
-                            get: { stateModel.inputText },
-                            set: { actions.onUpdateText?($0) }
-                        ), axis: .vertical)
-                        .font(Typography.bodyText)
-                        .foregroundStyle(Colors.Text.title)
-                        .tint(Colors.Main.primary)
-                        .lineLimit(8...12)
-                        .padding(.horizontal, .space16)
-                        .padding(.vertical, .space16)
+                        // MARK: - Input Area -
                         
-                        VStack {
-                            Spacer()
-                            HStack {
-                                Spacer()
-                                Text("\(stateModel.characterCount) chars")
-                                    .font(Typography.smallBody)
-                                    .foregroundStyle(Colors.Text.muted)
-                                    .padding(.space12)
+                        VStack(spacing: .space16) {
+                            
+                            if stateModel.images.isEmpty {
+                                ZStack(alignment: .topLeading) {
+                                    
+                                    if stateModel.inputText.isEmpty {
+                                        Text("Paste text or write here...")
+                                            .font(Typography.bodyText)
+                                            .foregroundStyle(Colors.Text.muted)
+                                            .padding(.horizontal, .space16)
+                                            .padding(.vertical, .space16)
+                                            .allowsHitTesting(false)
+                                    }
+                                    
+                                    TextField("Paste text or write here...", text: $stateModel.inputText, axis: .vertical)
+                                        .focused($isFocused)
+                                        .font(Typography.bodyText)
+                                        .foregroundStyle(Colors.Text.title)
+                                        .tint(Colors.Main.primary)
+                                        .lineLimit(8...(isFocused ? 8 : 15))
+                                        .animation(.easeInOut(duration: 0.2), value: isFocused)
+                                        .padding(.horizontal, .space16)
+                                        .padding(.vertical, .space16)
+                                    
+                                    VStack {
+                                        Spacer()
+                                        HStack {
+                                            Spacer()
+                                            Text("\(stateModel.characterCount)/\(stateModel.maxCharacters) chars")
+                                                .font(Typography.smallBody)
+                                                .foregroundStyle(stateModel.isLimitExceeded ? Color.red : Colors.Text.muted)
+                                                .padding(.space12)
+                                                .animation(.easeInOut, value: stateModel.isLimitExceeded)
+                                        }
+                                    }
+                                }
+                                .frame(minHeight: 200)
+                                .background(Colors.Main.cardSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                                        .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                                )
+                            } else {
+                                // MARK: - Photo gallery -
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: .space12) {
+                                        ForEach(stateModel.images) { picked in
+                                            Image(uiImage: picked.image)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 140, height: 168)
+                                                .clipped()
+                                                .clipShape(RoundedRectangle(cornerRadius: .space12))
+                                                .contentShape(RoundedRectangle(cornerRadius: .space12))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: .space12)
+                                                        .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                                                )
+                                                .overlay(alignment: .topTrailing) {
+                                                    Button {
+                                                        actions.onRemovePhoto?(picked.id)
+                                                    } label: {
+                                                        Image(systemName: "xmark")
+                                                            .font(.system(size: 10, weight: .black))
+                                                            .foregroundStyle(.white)
+                                                            .frame(width: 24, height: 24)
+                                                            .background(Color.black.opacity(0.6))
+                                                            .clipShape(Circle())
+                                                    }
+                                                    .padding(.space8)
+                                                }
+                                                .transition(.scale.combined(with: .opacity))
+                                        }
+                                    }
+                                    .padding(.horizontal, .space16)
+                                    .padding(.vertical, .space16)
+                                }
+                                .frame(maxWidth: .infinity, minHeight: 200, alignment: .center)
+                                .background(Colors.Main.cardSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                                        .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                                )
+                            }
+                            
+                            // MARK: Action Buttons
+                            HStack(spacing: .space12) {
+                                let remainingSlots = stateModel.maxPhotos - stateModel.images.count
+                                
+                                if remainingSlots > 0 {
+                                    PhotosPicker(
+                                        selection: $stateModel.selectedPhotoItems,
+                                        maxSelectionCount: remainingSlots,
+                                        matching: .images
+                                    ) {
+                                        ActionLabel(icon: "photo", title: "Choose Photo")
+                                    }
+                                    .onChange(of: stateModel.selectedPhotoItems) { _, items in
+                                        guard !items.isEmpty else { return }
+                                        actions.onPhotosSelected?(items)
+                                        stateModel.selectedPhotoItems.removeAll()
+                                    }
+                                } else {
+                                    Button {} label: {
+                                        ActionLabel(icon: "photo", title: "Max \(stateModel.maxPhotos) Photos")
+                                    }
+                                    .disabled(true)
+                                    .opacity(0.5)
+                                }
+                                
+                                Button {
+                                    actions.onTap?(.takePhoto)
+                                } label: {
+                                    ActionLabel(icon: "camera", title: "Take Photo")
+                                }
+                                .disabled(remainingSlots <= 0)
+                                .opacity(remainingSlots <= 0 ? 0.5 : 1.0)
                             }
                         }
-                    }
-                    .frame(minHeight: 200)
-                    .background(Colors.Main.cardSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                            .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                    )
-                    
-                    HStack(spacing: .space12) {
-                        ActionButton(icon: "photo", title: "Choose Photo") {}
-                        ActionButton(icon: "camera", title: "Take Photo") {}
-                    }
-                }
-                
-                // --- 4. SELECTION CARDS ---
-                VStack(alignment: .leading, spacing: .space12) {
-                    Text("WHAT DO YOU NEED?")
-                        .font(Typography.badgeLabel)
-                        .foregroundStyle(Colors.Text.muted)
-                    
-                    HStack(spacing: .space12) {
-                        SelectionCard(
-                            emoji: "🔎",
-                            title: "Explanation",
-                            subtitle: "Decode what they meant",
-                            isSelected: stateModel.selectedType == .explain
-                        ) {
-                            actions.onTap?(.explain)
+                        
+                        // MARK: - Selection cards -
+                        
+                        VStack(alignment: .leading, spacing: .space12) {
+                            Text("WHAT DO YOU NEED?")
+                                .font(Typography.badgeLabel)
+                                .foregroundStyle(Colors.Text.muted)
+                            
+                            HStack(spacing: .space12) {
+                                SelectionCard(
+                                    emoji: "🔎",
+                                    title: "Explanation",
+                                    subtitle: "Decode what they meant",
+                                    isSelected: stateModel.selectedType == .explain
+                                ) {
+                                    actions.onTap?(.explain)
+                                }
+                                
+                                SelectionCard(
+                                    emoji: "✍️",
+                                    title: "Reply",
+                                    subtitle: "Craft your response",
+                                    isSelected: stateModel.selectedType == .reply
+                                ) {
+                                    actions.onTap?(.reply)
+                                }
+                            }
                         }
                         
-                        SelectionCard(
-                            emoji: "✍️",
-                            title: "Reply",
-                            subtitle: "Craft your response",
-                            isSelected: stateModel.selectedType == .reply
-                        ) {
-                            actions.onTap?(.reply)
-                        }
+                        Spacer()
                     }
+                    .padding(.horizontal, StaticData.Layout.screenPadding)
+                    .padding(.top, .space16)
+                    .frame(minHeight: proxy.size.height)
                 }
-                
-                Spacer()
             }
-            .padding(.horizontal, StaticData.Layout.screenPadding)
-            .padding(.top, .space16)
-            
-            // --- 5. SUBMIT BUTTON ---
+            // MARK: - SUBMIT BUTTON -
             .safeAreaInset(edge: .bottom) {
                 Button {
                     actions.onAnalyse?()
                 } label: {
                     HStack(spacing: .space8) {
                         Image(systemName: "bolt.fill")
-                        Text("Analyze text")
+                        Text("Analyze input")
                     }
                     .font(Typography.primaryButton)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(stateModel.isAnalysisEnabled ? .white : .white.opacity(0.8))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
                     .background(
@@ -180,6 +262,33 @@ extension InputView {
                 .padding(.horizontal, StaticData.Layout.screenPadding)
                 .padding(.bottom, .space12)
             }
+            // MARK: - LOADING OVERLAY -
+            .overlay {
+                if stateModel.isLoaderPresented {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: .space16) {
+                            ProgressView()
+                                .tint(Colors.Main.accent)
+                                .scaleEffect(1.5)
+                            Text("Processing photos...")
+                                .font(Typography.bodyText)
+                                .foregroundStyle(.white)
+                        }
+                        .padding(.space32)
+                        .background(Colors.Main.cardSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: .space16))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: .space16)
+                                .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                        )
+                    }
+                    .allowsHitTesting(true)
+                }
+            }
+            .animation(.easeInOut(duration: 0.2), value: stateModel.isLoaderPresented)
         }
     }
 }
@@ -187,28 +296,25 @@ extension InputView {
 // MARK: - Subcomponents
 extension InputView.ContentView {
     
-    struct ActionButton: View {
+    struct ActionLabel: View {
         let icon: String
         let title: String
-        let action: () -> Void
         
         var body: some View {
-            Button(action: action) {
-                HStack(spacing: .space8) {
-                    Image(systemName: icon)
-                    Text(title)
-                }
-                .font(InputView.Typography.bodyText.weight(.semibold))
-                .foregroundStyle(InputView.Colors.Main.primary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, .space16)
-                .background(InputView.Colors.Main.cardSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(InputView.Colors.Main.borderSubtle, lineWidth: 1)
-                )
+            HStack(spacing: .space8) {
+                Image(systemName: icon)
+                Text(title)
             }
+            .font(InputView.Typography.bodyText.weight(.semibold))
+            .foregroundStyle(InputView.Colors.Main.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, .space16)
+            .background(InputView.Colors.Main.cardSurface)
+            .clipShape(RoundedRectangle(cornerRadius: .space12))
+            .overlay(
+                RoundedRectangle(cornerRadius: .space12)
+                    .stroke(InputView.Colors.Main.borderSubtle, lineWidth: 1)
+            )
         }
     }
     
@@ -246,7 +352,6 @@ extension InputView.ContentView {
                             lineWidth: isSelected ? 2 : 1
                         )
                 )
-                .animation(.easeInOut(duration: 0.2), value: isSelected)
             }
         }
     }
@@ -254,10 +359,6 @@ extension InputView.ContentView {
 
 #Preview {
     let view = InputView(output: { _ in })
-    
-    view.viewModel.state = .loaded(
-        InputViewModel.StateModel()
-    )
-    
+    view.viewModel.state = .loaded(InputViewModel.StateModel())
     return view
 }

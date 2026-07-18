@@ -12,15 +12,3 @@ protocol StateViewModelProtocol: AnyObject {
     var state: ViewState<StateModel> { get set }
     var stateModel: StateModel { get set }
 }
-
-extension StateViewModelProtocol {
-    var stateModel: StateModel {
-        get {
-            if case .loaded(let model) = state { return model }
-            return StateModel()
-        }
-        set {
-            state = .loaded(newValue)
-        }
-    }
-}

@@ -47,8 +47,8 @@ extension NavigationManager {
         switch event {
         case .dashboard(let output):
             handleDashboard(output)
-        case .input:
-            break
+        case .input(let output):
+            handleInput(output)
         case .explanation:
             break
         case .reply:
