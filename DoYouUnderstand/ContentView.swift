@@ -30,7 +30,9 @@ struct ContentView: View {
                 case .explenation:
                     ExplanationView()
                 case .reply:
-                    ResponseView()
+                    ReplyView { output in
+                        router.handle(.reply(output))
+                    }
                 }
             }
         }

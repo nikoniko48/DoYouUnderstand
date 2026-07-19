@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+// TODO: Move this to the Dashboard folder
+
 extension HistoryItem {
     
     static let mockPassiveAggressive = HistoryItem(

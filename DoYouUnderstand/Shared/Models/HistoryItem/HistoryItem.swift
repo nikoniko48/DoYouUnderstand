@@ -13,6 +13,8 @@ struct HistoryItem: Identifiable {
     let tone: Tone
     let timestamp: String
     let type: AnalysisType
+    
+    // TODO: properly set colors using the Tone enum
 
     var typeColor: Color {
         switch type {
@@ -35,6 +37,12 @@ struct HistoryItem: Identifiable {
             return Theme.Colors.Tone.passiveAggressive
         case .sarcastic:
             return Theme.Colors.Tone.sarcastic
+        case .professional:
+            return .red
+        case .assertive:
+            return .red
+        case .friendly:
+            return .red
         }
     }
 }

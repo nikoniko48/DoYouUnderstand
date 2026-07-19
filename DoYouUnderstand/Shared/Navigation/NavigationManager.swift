@@ -40,7 +40,7 @@ extension NavigationManager {
         case dashboard(DashboardViewModel.Output)
         case input(InputViewModel.Output)
         case explanation
-        case reply
+        case reply(ReplyViewModel.Output)
     }
     
     func handle(_ event: FlowEvent) {
@@ -51,8 +51,8 @@ extension NavigationManager {
             handleInput(output)
         case .explanation:
             break
-        case .reply:
-            break
+        case .reply(let output):
+            handleReply(output)
         }
     }
     
@@ -75,6 +75,13 @@ extension NavigationManager {
             navigate(to: .explenation)
         case .reply:
             navigate(to: .reply)
+        }
+    }
+    
+    func handleReply(_ output: ReplyViewModel.Output) {
+        switch output {
+        case .goBack:
+            popBack()
         }
     }
 }
