@@ -28,7 +28,9 @@ struct ContentView: View {
                         router.handle(.input(output))
                     }
                 case .explenation:
-                    ExplanationScreen()
+                    ExplanationScreen { output in
+                        router.handle(.explanation(output))
+                    }
                 case .reply:
                     ReplyScreen { output in
                         router.handle(.reply(output))

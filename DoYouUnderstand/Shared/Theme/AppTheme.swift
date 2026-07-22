@@ -43,6 +43,7 @@ enum Theme {
         static let screenTitle = Font.system(size: 18, weight: .bold)
         static let primaryButton = Font.system(size: 17, weight: .heavy)
         
+        static let biggerText = Font.system(size: 14, weight: .bold)
         static let bodyText = Font.system(size: 13, weight: .medium)
         static let smallBody = Font.system(size: 12, weight: .regular)
         
