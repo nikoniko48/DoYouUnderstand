@@ -16,9 +16,11 @@ final class ExplanationViewModel: StateViewModelProtocol {
     private(set) var actions: Actions = .init()
     private let output: (Output) -> Void
     private var useMocks: Bool
+    private let historyItemId: String?
     
-    init(useMocks: Bool = false, output: @escaping (Output) -> Void) {
+    init(useMocks: Bool = false, historyItemId: String? = nil, output: @escaping (Output) -> Void) {
         self.useMocks = useMocks
+        self.historyItemId = historyItemId
         self.output = output
         self.stateModel = StateModel()
         
@@ -61,7 +63,7 @@ extension ExplanationViewModel {
     
     private func loadData() {
         if useMocks {
-            let mockData = ExplanationViewModel.StateModel.mock
+            let mockData = ExplanationViewModel.StateModel.mock(for: historyItemId)
             
             self.stateModel.originalMessage = mockData.originalMessage
             self.stateModel.originalTone = mockData.originalTone
@@ -69,7 +71,7 @@ extension ExplanationViewModel {
             
             self.state = .loaded(self.stateModel)
         } else {
-            // TODO: Live AI Generation Implementation
+            // ... live logic
         }
     }
     

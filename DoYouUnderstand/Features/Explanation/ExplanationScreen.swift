@@ -14,8 +14,8 @@ struct ExplanationScreen: View {
     
     @State var viewModel: ExplanationViewModel
     
-    init(output: @escaping (ExplanationViewModel.Output) -> Void) {
-        self.viewModel = .init(useMocks: true, output: output)
+    init(historyItemId: String? = nil, output: @escaping (ExplanationViewModel.Output) -> Void) {
+        self.viewModel = .init(useMocks: true, historyItemId: historyItemId, output: output)
     }
     
     var body: some View {

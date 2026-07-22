@@ -93,14 +93,18 @@ extension DashboardScreen {
                 
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVStack(spacing: .space12) {
-                        // TODO: add a nice screen for when the user doesn't have any history items yet
                         if stateModel.history.isEmpty {
                             Text("No analyses yet. Start decoding!")
                                 .font(Typography.bodyText)
                                 .foregroundStyle(Colors.Text.muted)
                         } else {
                             ForEach(stateModel.history) { item in
-                                HistoryCardView(item: item)
+                                Button {
+                                    actions.onTapHistoryItem?(item)
+                                } label: {
+                                    HistoryCardView(item: item)
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }

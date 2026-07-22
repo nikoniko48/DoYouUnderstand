@@ -16,9 +16,11 @@ final class ReplyViewModel: StateViewModelProtocol {
     private(set) var actions: Actions = .init()
     private let output: (Output) -> Void
     private var useMocks: Bool
+    private let historyItemId: String?
     
-    init(useMocks: Bool = false, output: @escaping (Output) -> Void) {
+    init(useMocks: Bool = false, historyItemId: String?, output: @escaping (Output) -> Void) {
         self.useMocks = useMocks
+        self.historyItemId = historyItemId
         self.output = output
         self.stateModel = StateModel()
         
@@ -73,15 +75,16 @@ extension ReplyViewModel {
 // MARK: - Functions -
 
 extension ReplyViewModel {
+    
     private func loadData() {
         if useMocks {
-            let mockData = ReplyViewModel.StateModel.mock
+            let mockData = ReplyViewModel.StateModel.mock(for: historyItemId)
             
             self.stateModel.originalTone = mockData.originalTone
             self.stateModel.options = mockData.options
             self.state = .loaded(self.stateModel)
         } else {
-            // TODO: Live AI Generation Implementation
+            // ... live logic
         }
     }
     

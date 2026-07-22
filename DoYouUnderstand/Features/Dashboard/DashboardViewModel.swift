@@ -15,8 +15,6 @@ final class DashboardViewModel: StateViewModelProtocol {
     
     private(set) var actions: Actions = .init()
     private let output: (Output) -> Void
-    
-    // maybe update later
     private var useMocks: Bool
     
     init(useMocks: Bool = false, output: @escaping (Output) -> Void) {
@@ -34,8 +32,8 @@ extension DashboardViewModel {
     
     enum Output {
         case input
-        case explanation
-        case reply
+        case explanation(String) // ✅ Pass ID
+        case reply(String)       // ✅ Pass ID
     }
 }
 
@@ -45,15 +43,10 @@ extension DashboardViewModel {
     
     struct Actions {
         var onNavigate: ((Route) -> Void)?
-        
-        enum Tap {
-            
-        }
+        var onTapHistoryItem: ((HistoryItem) -> Void)? // ✅ Handle item taps
         
         enum Route {
             case input
-            case explanation
-            case reply
         }
     }
     
@@ -63,10 +56,16 @@ extension DashboardViewModel {
             switch route {
             case .input:
                 self?.output(.input)
-            case .explanation:
-                break
+            }
+        }
+        
+        actions.onTapHistoryItem = { [weak self] item in
+            // Route based on the type of history item
+            switch item.type {
+            case .explain:
+                self?.output(.explanation(item.id))
             case .reply:
-                break
+                self?.output(.reply(item.id))
             }
         }
     }
@@ -75,15 +74,13 @@ extension DashboardViewModel {
 // MARK: - Functions -
 
 extension DashboardViewModel {
-    
     private func getHistoryItems() {
         if useMocks {
             stateModel.history = HistoryItem.mockList
             stateModel.scansRemaining = 7
-            
             state = .loaded(stateModel)
         } else {
-            // TODO: Live implementation
+            // TODO: Fetch from Supabase/CloudKit
         }
     }
 }

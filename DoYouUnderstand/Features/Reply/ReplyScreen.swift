@@ -14,8 +14,8 @@ struct ReplyScreen: View {
     
     @State var viewModel: ReplyViewModel
     
-    init(output: @escaping (ReplyViewModel.Output) -> Void) {
-        self.viewModel = .init(useMocks: true, output: output)
+    init(historyItemId: String? = nil, output: @escaping (ReplyViewModel.Output) -> Void) {
+        self.viewModel = .init(useMocks: true, historyItemId: historyItemId, output: output)
     }
     
     var body: some View {

@@ -11,8 +11,8 @@ enum Route: Hashable {
     case onboarding
     case dashboard
     case input
-    case explenation
-    case reply
+    case explenation(String?)
+    case reply(String?)
 }
 
 @Observable
@@ -60,10 +60,10 @@ extension NavigationManager {
         switch output {
         case .input:
             navigate(to: .input)
-        case .explanation:
-            navigate(to: .explenation)
-        case .reply:
-            navigate(to: .reply)
+        case .explanation(let id):
+            navigate(to: .explenation(id))
+        case .reply(let id):
+            navigate(to: .reply(id))
         }
     }
     
@@ -72,9 +72,9 @@ extension NavigationManager {
         case .goBack:
             popBack()
         case .explain:
-            navigate(to: .explenation)
+            navigate(to: .explenation(nil))
         case .reply:
-            navigate(to: .reply)
+            navigate(to: .reply(nil))
         }
     }
     
