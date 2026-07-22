@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-// TODO: name every screen Screen and check extensions if they make sense
-
 extension ReplyViewModel.StateModel {
     
     static var mock: ReplyViewModel.StateModel {

@@ -41,25 +41,31 @@ extension ReplyViewModel {
     
     struct Actions {
         var onTapBack: (() -> Void)?
-        var onCopy: ((String) -> Void)?
-        var onEdit: ((ReplyViewModel.StateModel.ReplyOption) -> Void)?
+        var onCopy: ((UUID) -> Void)?
+        var onStartEdit: ((UUID) -> Void)?
+        var onCancelEdit: ((UUID) -> Void)?
+        var onSaveEdit: ((UUID) -> Void)?
     }
     
     private func setActions() {
         actions.onTapBack = { [weak self] in
-            self?.output(.goBack)
+            self?.goBack()
         }
         
-        actions.onCopy = { text in
-            // Use native clipboard
-            UIPasteboard.general.string = text
-            // TODO: Trigger a toast or success feedback
-            print("Copied: \(text)")
+        actions.onCopy = { [weak self] id in
+            self?.copyReply(id: id)
         }
         
-        actions.onEdit = { option in
-            // TODO: Handle routing to an editor or opening a sheet
-            print("Editing: \(option.tone)")
+        actions.onStartEdit = { [weak self] id in
+            self?.startEdit(id: id)
+        }
+        
+        actions.onCancelEdit = { [weak self] id in
+            self?.cancelEdit(id: id)
+        }
+        
+        actions.onSaveEdit = { [weak self] id in
+            self?.saveEdit(id: id)
         }
     }
 }
@@ -69,7 +75,7 @@ extension ReplyViewModel {
 extension ReplyViewModel {
     private func loadData() {
         if useMocks {
-            let mockData = StateModel.mock
+            let mockData = ReplyViewModel.StateModel.mock
             
             self.stateModel.originalTone = mockData.originalTone
             self.stateModel.options = mockData.options
@@ -77,5 +83,47 @@ extension ReplyViewModel {
         } else {
             // TODO: Live AI Generation Implementation
         }
+    }
+    
+    private func goBack() {
+        output(.goBack)
+    }
+    
+    private func copyReply(id: UUID) {
+        guard let index = stateModel.options.firstIndex(where: { $0.id == id }) else { return }
+        
+        let textToCopy = stateModel.options[index].text
+        UIPasteboard.general.string = textToCopy
+        print("Copied: \(textToCopy)")
+        
+        stateModel.options[index].isCopied = true
+        
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            if let idx = self.stateModel.options.firstIndex(where: { $0.id == id }) {
+                self.stateModel.options[idx].isCopied = false
+            }
+        }
+    }
+    
+    private func startEdit(id: UUID) {
+        guard let index = stateModel.options.firstIndex(where: { $0.id == id }) else { return }
+        
+        stateModel.options[index].draftText = stateModel.options[index].text
+        stateModel.options[index].isEditing = true
+    }
+    
+    private func cancelEdit(id: UUID) {
+        guard let index = stateModel.options.firstIndex(where: { $0.id == id }) else { return }
+        
+        stateModel.options[index].isEditing = false
+    }
+    
+    private func saveEdit(id: UUID) {
+        guard let index = stateModel.options.firstIndex(where: { $0.id == id }) else { return }
+        
+        let draft = stateModel.options[index].draftText
+        stateModel.options[index].text = draft
+        stateModel.options[index].isEditing = false
     }
 }

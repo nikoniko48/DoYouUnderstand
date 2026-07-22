@@ -1,5 +1,5 @@
 //
-//  InputView.swift
+//  InputScreen.swift
 //  DoYouUnderstand
 //
 //  Created by Nikodem Raczka on 09/06/2026.
@@ -8,7 +8,7 @@
 import SwiftUI
 import PhotosUI
 
-struct InputView: View {
+struct InputScreen: View {
     
     typealias Typography = Theme.Typography
     typealias Colors = Theme.Colors
@@ -33,7 +33,7 @@ struct InputView: View {
     }
 }
 
-extension InputView {
+extension InputScreen {
     
     struct ContentView: View {
         
@@ -294,7 +294,7 @@ extension InputView {
 }
 
 // MARK: - Subcomponents
-extension InputView.ContentView {
+extension InputScreen {
     
     struct ActionLabel: View {
         let icon: String
@@ -305,15 +305,15 @@ extension InputView.ContentView {
                 Image(systemName: icon)
                 Text(title)
             }
-            .font(InputView.Typography.bodyText.weight(.semibold))
-            .foregroundStyle(InputView.Colors.Main.primary)
+            .font(Typography.bodyText.weight(.semibold))
+            .foregroundStyle(Colors.Main.primary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, .space16)
-            .background(InputView.Colors.Main.cardSurface)
+            .background(Colors.Main.cardSurface)
             .clipShape(RoundedRectangle(cornerRadius: .space12))
             .overlay(
                 RoundedRectangle(cornerRadius: .space12)
-                    .stroke(InputView.Colors.Main.borderSubtle, lineWidth: 1)
+                    .stroke(Colors.Main.borderSubtle, lineWidth: 1)
             )
         }
     }
@@ -333,22 +333,22 @@ extension InputView.ContentView {
                         .padding(.bottom, .space4)
                     
                     Text(title)
-                        .font(InputView.Typography.bodyText.weight(.bold))
-                        .foregroundStyle(isSelected ? InputView.Colors.Main.primary : InputView.Colors.Text.title)
+                        .font(Typography.bodyText.weight(.bold))
+                        .foregroundStyle(isSelected ? Colors.Main.primary : Colors.Text.title)
                     
                     Text(subtitle)
-                        .font(InputView.Typography.smallBody)
-                        .foregroundStyle(InputView.Colors.Text.muted)
+                        .font(Typography.smallBody)
+                        .foregroundStyle(Colors.Text.muted)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
                 .padding(.horizontal, .space8)
-                .background(isSelected ? InputView.Colors.Main.primary.opacity(0.05) : InputView.Colors.Main.cardSurface)
+                .background(isSelected ? Colors.Main.primary.opacity(0.05) : Colors.Main.cardSurface)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(
-                            isSelected ? InputView.Colors.Main.primary : InputView.Colors.Main.borderSubtle,
+                            isSelected ? Colors.Main.primary : Colors.Main.borderSubtle,
                             lineWidth: isSelected ? 2 : 1
                         )
                 )
@@ -358,7 +358,7 @@ extension InputView.ContentView {
 }
 
 #Preview {
-    let view = InputView(output: { _ in })
+    let view = InputScreen(output: { _ in })
     view.viewModel.state = .loaded(InputViewModel.StateModel())
     return view
 }

@@ -12,25 +12,25 @@ struct ContentView: View {
     
     var body: some View {
         NavigationStack(path: $router.path) {
-            DashboardView { output in
+            DashboardScreen { output in
                 router.handle(.dashboard(output))
             }
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .onboarding:
-                    OnboardingView()
+                    OnboardingScreen()
                 case .dashboard:
-                    DashboardView { output in
+                    DashboardScreen { output in
                         router.handle(.dashboard(output))
                     }
                 case .input:
-                    InputView { output in
+                    InputScreen { output in
                         router.handle(.input(output))
                     }
                 case .explenation:
-                    ExplanationView()
+                    ExplanationScreen()
                 case .reply:
-                    ReplyView { output in
+                    ReplyScreen { output in
                         router.handle(.reply(output))
                     }
                 }

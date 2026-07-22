@@ -32,6 +32,10 @@ extension ReplyViewModel.StateModel {
     struct ReplyOption: Identifiable {
         let id = UUID()
         let tone: Tone
-        let text: String
+        var text: String
+        
+        var draftText: String = ""
+        var isEditing: Bool = false
+        var isCopied: Bool = false
     }
 }

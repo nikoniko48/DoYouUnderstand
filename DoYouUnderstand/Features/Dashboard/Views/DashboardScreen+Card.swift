@@ -1,5 +1,5 @@
 //
-//  DashboardView+Card.swift
+//  DashboardScreen+Card.swift
 //  DoYouUnderstand
 //
 //  Created by Nikodem Raczka on 10/06/2026.
@@ -21,14 +21,14 @@ struct HistoryCardView: View {
                 HStack(spacing: .space4) {
                     Text(item.tone.rawValue.uppercased())
                         .font(Typography.badgeLabel)
-                        .foregroundStyle(item.toneColor)
+                        .foregroundStyle(item.tone.color)
                         .padding(.horizontal, .space8)
                         .padding(.vertical, .space4)
-                        .background(item.toneColor.opacity(0.12))
+                        .background(item.tone.color.opacity(0.12))
                         .clipShape(Capsule())
                         .overlay(
                             Capsule()
-                                .stroke(item.toneColor.opacity(0.3), lineWidth: 1)
+                                .stroke(item.tone.color.opacity(0.3), lineWidth: 1)
                         )
                     
                     Text(item.type.rawValue.uppercased())

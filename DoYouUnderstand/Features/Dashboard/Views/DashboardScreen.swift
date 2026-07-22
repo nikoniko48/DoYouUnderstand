@@ -1,5 +1,5 @@
 //
-//  DashboardView.swift
+//  DashboardScreen.swift
 //  DoYouUnderstand
 //
 //  Created by Nikodem Raczka on 09/06/2026.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct DashboardView: View {
+struct DashboardScreen: View {
     
     typealias Typography = Theme.Typography
     typealias Colors = Theme.Colors
@@ -31,7 +31,7 @@ struct DashboardView: View {
     }
 }
 
-extension DashboardView {
+extension DashboardScreen {
     
     struct ContentView: View {
         
@@ -132,7 +132,7 @@ extension DashboardView {
 }
 
 #Preview {
-    let view = DashboardView(output: { _ in })
+    let view = DashboardScreen(output: { _ in })
     
     view.viewModel.state = .loaded(
         DashboardViewModel.StateModel(history: HistoryItem.mockList, scansRemaining: 7)
