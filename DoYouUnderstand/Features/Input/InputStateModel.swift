@@ -16,6 +16,7 @@ extension InputViewModel {
         let maxCharacters: Int = 360
         let maxPhotos: Int = 6
         var isLoaderPresented: Bool = false
+        var isCameraPresented: Bool = false
         var inputText: String = ""
         var selectedType: AnalysisType = .explain
         var images: [PickedImage] = []

@@ -289,6 +289,14 @@ extension InputScreen {
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: stateModel.isLoaderPresented)
+            // MARK: - CAMERA -
+            .fullScreenCover(isPresented: $stateModel.isCameraPresented) {
+                CameraPicker(
+                    onCapture: { image in actions.onPhotoCaptured?(image) },
+                    onCancel: { actions.onCameraDismiss?() }
+                )
+                .ignoresSafeArea()
+            }
         }
     }
 }

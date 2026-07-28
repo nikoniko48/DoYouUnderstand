@@ -7,6 +7,7 @@
 
 import SwiftUI
 import PhotosUI
+import UIKit
 
 @Observable
 final class InputViewModel: StateViewModelProtocol {
@@ -49,6 +50,8 @@ extension InputViewModel {
         var onTap: ((Tap) -> Void)?
         var onPhotosSelected: (([PhotosPickerItem]) -> Void)?
         var onRemovePhoto: ((UUID) -> Void)?
+        var onPhotoCaptured: ((UIImage) -> Void)?
+        var onCameraDismiss: (() -> Void)?
         
         enum Tap {
             case back
@@ -71,7 +74,15 @@ extension InputViewModel {
         actions.onRemovePhoto = { [weak self] id in
             self?.removePhoto(id: id)
         }
-        
+
+        actions.onPhotoCaptured = { [weak self] image in
+            self?.handleCameraCapture(image)
+        }
+
+        actions.onCameraDismiss = { [weak self] in
+            self?.stateModel.isCameraPresented = false
+        }
+
         actions.onTap = { [weak self] tap in
             guard let self else { return }
             
@@ -117,9 +128,29 @@ extension InputViewModel {
     }
     
     private func takePhoto() {
-        
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            // No camera hardware (e.g. Simulator) — fall back to a mock capture so the flow stays testable.
+            if useMocks {
+                appendPhoto(.mockCaptured)
+            }
+            return
+        }
+
+        stateModel.isCameraPresented = true
     }
-    
+
+    private func handleCameraCapture(_ image: UIImage) {
+        stateModel.isCameraPresented = false
+        appendPhoto(PickedImage(image: image))
+    }
+
+    private func appendPhoto(_ picked: PickedImage) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            let combined = stateModel.images + [picked]
+            stateModel.images = Array(combined.prefix(stateModel.maxPhotos))
+        }
+    }
+
     private func removePhoto(id: UUID) {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             stateModel.images.removeAll { $0.id == id }
