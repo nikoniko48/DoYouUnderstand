@@ -58,6 +58,13 @@ extension OnboardingScreen {
             .padding(.top, .space16)
             .background(Theme.Colors.Main.background)
             .animation(.spring(response: 0.4, dampingFraction: 0.8), value: stateModel.currentStep)
+            .gesture(
+                DragGesture().onEnded { value in
+                    if value.translation.width > 50 && stateModel.currentStep > 0 {
+                        actions.onSwipeBack?()
+                    }
+                }
+            )
         }
     }
 }

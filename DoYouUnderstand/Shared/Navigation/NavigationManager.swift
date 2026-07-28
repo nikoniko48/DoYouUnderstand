@@ -13,6 +13,8 @@ enum Route: Hashable {
     case input
     case explenation(String?)
     case reply(String?)
+    case faq
+    case settings
 }
 
 @Observable
@@ -41,8 +43,10 @@ extension NavigationManager {
         case input(InputViewModel.Output)
         case explanation(ExplanationViewModel.Output)
         case reply(ReplyViewModel.Output)
+        case faq(FAQViewModel.Output)
+        case settings(SettingsViewModel.Output)
     }
-    
+
     func handle(_ event: FlowEvent) {
         switch event {
         case .dashboard(let output):
@@ -53,9 +57,13 @@ extension NavigationManager {
             handleExplanation(output)
         case .reply(let output):
             handleReply(output)
+        case .faq(let output):
+            handleFAQ(output)
+        case .settings(let output):
+            handleSettings(output)
         }
     }
-    
+
     func handleDashboard(_ output: DashboardViewModel.Output) {
         switch output {
         case .input:
@@ -64,6 +72,10 @@ extension NavigationManager {
             navigate(to: .explenation(id))
         case .reply(let id):
             navigate(to: .reply(id))
+        case .faq:
+            navigate(to: .faq)
+        case .settings:
+            navigate(to: .settings)
         }
     }
     
@@ -86,6 +98,20 @@ extension NavigationManager {
     }
     
     func handleReply(_ output: ReplyViewModel.Output) {
+        switch output {
+        case .goBack:
+            popBack()
+        }
+    }
+
+    func handleFAQ(_ output: FAQViewModel.Output) {
+        switch output {
+        case .goBack:
+            popBack()
+        }
+    }
+
+    func handleSettings(_ output: SettingsViewModel.Output) {
         switch output {
         case .goBack:
             popBack()

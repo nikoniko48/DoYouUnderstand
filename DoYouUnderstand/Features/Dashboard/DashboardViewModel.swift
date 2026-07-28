@@ -34,6 +34,8 @@ extension DashboardViewModel {
         case input
         case explanation(String) // ✅ Pass ID
         case reply(String)       // ✅ Pass ID
+        case faq
+        case settings
     }
 }
 
@@ -47,15 +49,21 @@ extension DashboardViewModel {
         
         enum Route {
             case input
+            case faq
+            case settings
         }
     }
-    
+
     func setActions() {
-        
+
         actions.onNavigate = { [weak self] route in
             switch route {
             case .input:
                 self?.output(.input)
+            case .faq:
+                self?.output(.faq)
+            case .settings:
+                self?.output(.settings)
             }
         }
         

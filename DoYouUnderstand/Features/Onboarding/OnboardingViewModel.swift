@@ -43,6 +43,7 @@ extension OnboardingViewModel {
         var onSelectContext: ((StateModel.CommunicationContext) -> Void)?
         var onSelectGoal: ((StateModel.Goal) -> Void)?
         var onNext: (() -> Void)?
+        var onSwipeBack: (() -> Void)?
         var onFinish: (() -> Void)?
     }
 
@@ -58,6 +59,10 @@ extension OnboardingViewModel {
 
         actions.onNext = { [weak self] in
             self?.advance()
+        }
+
+        actions.onSwipeBack = { [weak self] in
+            self?.retreat()
         }
 
         actions.onFinish = { [weak self] in
@@ -86,6 +91,13 @@ extension OnboardingViewModel {
         guard stateModel.currentStep < stateModel.totalSteps - 1 else { return }
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             stateModel.currentStep += 1
+        }
+    }
+
+    private func retreat() {
+        guard stateModel.currentStep > 0 else { return }
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            stateModel.currentStep -= 1
         }
     }
 

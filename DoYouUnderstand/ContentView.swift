@@ -36,6 +36,14 @@ struct ContentView: View {
                     ReplyScreen(historyItemId: id) { output in
                         router.handle(.reply(output))
                     }
+                case .faq:
+                    FAQScreen { output in
+                        router.handle(.faq(output))
+                    }
+                case .settings:
+                    SettingsScreen { output in
+                        router.handle(.settings(output))
+                    }
                 }
             }
         }

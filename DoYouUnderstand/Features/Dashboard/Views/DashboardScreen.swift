@@ -55,11 +55,24 @@ extension DashboardScreen {
                     
                     Spacer()
                     
-                    Image(systemName: "questionmark.circle")
-                        .font(Typography.screenTitle)
-                        .foregroundStyle(Colors.Text.muted)
-                        .padding(.trailing, .space12)
-                    
+                    Button {
+                        actions.onNavigate?(.faq)
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .font(Typography.screenTitle)
+                            .foregroundStyle(Colors.Text.muted)
+                    }
+                    .padding(.trailing, .space12)
+
+                    Button {
+                        actions.onNavigate?(.settings)
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .font(Typography.screenTitle)
+                            .foregroundStyle(Colors.Text.muted)
+                    }
+                    .padding(.trailing, .space12)
+
                     HStack(spacing: .space4) {
                         Image(systemName: "bolt.fill")
                             .font(Typography.bodyText)
