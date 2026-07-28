@@ -9,16 +9,17 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var router = NavigationManager()
-    
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
+
     var body: some View {
         NavigationStack(path: $router.path) {
-            DashboardScreen { output in
-                router.handle(.dashboard(output))
-            }
+            rootScreen
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .onboarding:
-                    OnboardingScreen()
+                    OnboardingScreen { output in
+                        handleOnboarding(output)
+                    }
                 case .dashboard:
                     DashboardScreen { output in
                         router.handle(.dashboard(output))
@@ -37,6 +38,32 @@ struct ContentView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+// MARK: - Root & Onboarding -
+
+extension ContentView {
+
+    @ViewBuilder
+    private var rootScreen: some View {
+        if hasSeenOnboarding {
+            DashboardScreen { output in
+                router.handle(.dashboard(output))
+            }
+        } else {
+            OnboardingScreen { output in
+                handleOnboarding(output)
+            }
+        }
+    }
+
+    private func handleOnboarding(_ output: OnboardingViewModel.Output) {
+        switch output {
+        case .finishOnboarding:
+            hasSeenOnboarding = true
+            router.popToRoot()
         }
     }
 }
