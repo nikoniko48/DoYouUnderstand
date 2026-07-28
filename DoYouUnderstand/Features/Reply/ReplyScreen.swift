@@ -198,7 +198,7 @@ extension ReplyScreen {
                         } label: {
                             Text("Save")
                                 .font(Theme.Typography.smallBody.weight(.bold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(option.tone.color.contrastingForeground)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
                                 .background(option.tone.color)

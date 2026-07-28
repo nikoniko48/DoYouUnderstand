@@ -115,17 +115,10 @@ extension DashboardScreen {
                     } label: {
                         Image(systemName: "plus")
                             .font(Typography.hugeTitle)
-                            .foregroundStyle(Colors.Text.title)
+                            .foregroundStyle(.black)
                             .frame(width: StaticData.Layout.floatingButtonSize.height, height: StaticData.Layout.floatingButtonSize.width)
-                            .background(
-                                LinearGradient(
-                                    colors: [Colors.Main.primary, Colors.Main.primaryGradientEnd],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .background(Colors.Main.accent)
                             .clipShape(Circle())
-                            .shadow(color: Colors.Main.accent.opacity(0.4), radius: 16, x: 0, y: 8)
                     }
                     .padding(.bottom, .space12)
                 }

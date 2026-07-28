@@ -19,7 +19,7 @@ struct HistoryItem: Identifiable {
         case .explain:
             return Theme.Colors.Text.highlight
         case .reply:
-            return Theme.Colors.Main.accent
+            return Theme.Colors.Main.secondaryAccent
         }
     }
 }

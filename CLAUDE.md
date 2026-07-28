@@ -53,18 +53,3 @@ Shared infrastructure lives in `Shared/`:
 - **`Shared/Models/`** — cross-feature domain enums: `AnalysisType` (`.explain` / `.reply`) and `Tone` (maps to `Theme.Colors.Tone.*`, an emoji, and a `replyTitle`).
 
 Features present: `Onboarding`, `Dashboard` (history list + entry point), `Input` (text/photo capture, choose explain vs. reply), `Explanation`, `Reply`. Dashboard's `HistoryItem.type: AnalysisType` determines whether tapping a history row routes to `.explenation(id)` or `.reply(id)` (note: `Route.explenation` is the existing, intentionally-matched spelling — don't silently "fix" it in isolation, it's used across `NavigationManager`/`ContentView`).
-
-## Git & Commit Conventions
-
-When writing Git commits, always follow this naming format:
-`DYU-XXX - <short description of changes>`
-
-### Rules:
-1. **Ticket Prefix:** Always start with `DYU-` followed by a 3-digit zero-padded number (e.g., `DYU-008`, `DYU-009`).
-2. **Auto-Increment:** Before committing, check the latest commit message using `git log -n 1` to find the last used `DYU-XXX` number, then increment it by 1.
-3. **Separator:** Use a space, hyphen, and space (` - `) between the prefix and description.
-4. **Description:** Keep the message clear, concise, and in lowercase/sentence case.
-
-### Examples:
-- `DYU-008 - refactored HomeView state for Skip compatibility`
-- `DYU-009 - fixed navigation stack issue`

@@ -247,7 +247,7 @@ extension InputScreen {
                         Text("Analyze input")
                     }
                     .font(Typography.primaryButton)
-                    .foregroundStyle(stateModel.isAnalysisEnabled ? .white : .white.opacity(0.8))
+                    .foregroundStyle(stateModel.isAnalysisEnabled ? .black : Colors.Text.muted)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
                     .background(

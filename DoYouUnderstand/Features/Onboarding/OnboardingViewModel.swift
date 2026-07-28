@@ -40,29 +40,24 @@ extension OnboardingViewModel {
 extension OnboardingViewModel {
 
     struct Actions {
-        var onSelectTriggerTone: ((StateModel.TriggerTone) -> Void)?
-        var onSelectCopingStyle: ((StateModel.CopingStyle) -> Void)?
+        var onSelectContext: ((StateModel.CommunicationContext) -> Void)?
+        var onSelectGoal: ((StateModel.Goal) -> Void)?
         var onNext: (() -> Void)?
-        var onBack: (() -> Void)?
         var onFinish: (() -> Void)?
     }
 
     private func setActions() {
 
-        actions.onSelectTriggerTone = { [weak self] tone in
-            self?.selectTriggerTone(tone)
+        actions.onSelectContext = { [weak self] context in
+            self?.selectContext(context)
         }
 
-        actions.onSelectCopingStyle = { [weak self] style in
-            self?.selectCopingStyle(style)
+        actions.onSelectGoal = { [weak self] goal in
+            self?.selectGoal(goal)
         }
 
         actions.onNext = { [weak self] in
             self?.advance()
-        }
-
-        actions.onBack = { [weak self] in
-            self?.retreat()
         }
 
         actions.onFinish = { [weak self] in
@@ -75,31 +70,22 @@ extension OnboardingViewModel {
 
 extension OnboardingViewModel {
 
-    private func selectTriggerTone(_ tone: StateModel.TriggerTone) {
+    private func selectContext(_ context: StateModel.CommunicationContext) {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            stateModel.selectedTriggerTone = tone
+            stateModel.selectedContext = context
         }
     }
 
-    private func selectCopingStyle(_ style: StateModel.CopingStyle) {
+    private func selectGoal(_ goal: StateModel.Goal) {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            stateModel.selectedCopingStyle = style
+            stateModel.selectedGoal = goal
         }
     }
 
     private func advance() {
         guard stateModel.currentStep < stateModel.totalSteps - 1 else { return }
-        stateModel.direction = .forward
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             stateModel.currentStep += 1
-        }
-    }
-
-    private func retreat() {
-        guard stateModel.currentStep > 0 else { return }
-        stateModel.direction = .backward
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            stateModel.currentStep -= 1
         }
     }
 

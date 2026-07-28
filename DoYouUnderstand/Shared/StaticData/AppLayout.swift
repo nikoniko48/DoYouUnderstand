@@ -15,8 +15,7 @@ extension StaticData {
         static let cornerRadius: CGFloat = 16
         static let floatingButtonSize: CGSize = .init(width: 64, height: 64)
         static let backButtonSize: CGSize = .init(width: 44, height: 44)
-        static let progressBarHeight: CGFloat = 6
-        static let optionEmojiBadgeSize: CGFloat = 44
+        static let progressBarHeight: CGFloat = 4
     }
     
     

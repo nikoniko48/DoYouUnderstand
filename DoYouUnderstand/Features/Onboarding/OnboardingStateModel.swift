@@ -12,26 +12,23 @@ extension OnboardingViewModel {
     @Observable
     final class StateModel: StateModelProtocol {
         var currentStep: Int
-        var direction: StepDirection
-        var selectedTriggerTone: TriggerTone?
-        var selectedCopingStyle: CopingStyle?
+        var selectedContext: CommunicationContext?
+        var selectedGoal: Goal?
 
         let totalSteps: Int = 3
 
         init(
             currentStep: Int = 0,
-            direction: StepDirection = .forward,
-            selectedTriggerTone: TriggerTone? = nil,
-            selectedCopingStyle: CopingStyle? = nil
+            selectedContext: CommunicationContext? = nil,
+            selectedGoal: Goal? = nil
         ) {
             self.currentStep = currentStep
-            self.direction = direction
-            self.selectedTriggerTone = selectedTriggerTone
-            self.selectedCopingStyle = selectedCopingStyle
+            self.selectedContext = selectedContext
+            self.selectedGoal = selectedGoal
         }
 
         var step: Step {
-            Step(rawValue: currentStep) ?? .triggerTone
+            Step(rawValue: currentStep) ?? .communicationContext
         }
 
         var isFinisherStep: Bool {
@@ -40,19 +37,14 @@ extension OnboardingViewModel {
 
         var isContinueEnabled: Bool {
             switch step {
-            case .triggerTone:
-                return selectedTriggerTone != nil
-            case .copingStyle:
-                return selectedCopingStyle != nil
+            case .communicationContext:
+                return selectedContext != nil
+            case .goal:
+                return selectedGoal != nil
             case .finisher:
                 return true
             }
         }
-    }
-
-    enum StepDirection {
-        case forward
-        case backward
     }
 }
 
@@ -61,40 +53,24 @@ extension OnboardingViewModel {
 extension OnboardingViewModel.StateModel {
 
     enum Step: Int, CaseIterable {
-        case triggerTone = 0
-        case copingStyle = 1
+        case communicationContext = 0
+        case goal = 1
         case finisher = 2
     }
 
-    enum TriggerTone: String, CaseIterable, Identifiable {
-        case condescending = "Condescending & Bossy"
-        case fakeFriendly = "Fake-Friendly & Eager"
-        case passiveAggressive = "Pure Passive-Aggressive"
+    enum CommunicationContext: String, CaseIterable, Identifiable {
+        case workAndSlack = "Work emails and Slack"
+        case textingAndDating = "Texting and dating apps"
+        case familyGroupChats = "Family group chats"
 
         var id: String { rawValue }
-
-        var emoji: String {
-            switch self {
-            case .condescending: return "🧐"
-            case .fakeFriendly: return "🤩"
-            case .passiveAggressive: return "🙃"
-            }
-        }
     }
 
-    enum CopingStyle: String, CaseIterable, Identifiable {
-        case stare = "Stare at it for an hour"
-        case vent = "Vent to a coworker"
-        case draftRisky = "Draft a risky emotional reply"
+    enum Goal: String, CaseIterable, Identifiable {
+        case decodeMeaning = "Decode what they actually mean"
+        case draftReply = "Draft a flawless reply"
+        case setBoundaries = "Set firm boundaries"
 
         var id: String { rawValue }
-
-        var emoji: String {
-            switch self {
-            case .stare: return "👀"
-            case .vent: return "🗣️"
-            case .draftRisky: return "💣"
-            }
-        }
     }
 }

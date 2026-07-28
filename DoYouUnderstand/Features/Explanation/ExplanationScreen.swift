@@ -150,19 +150,12 @@ extension ExplanationScreen {
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.space24)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [Colors.Main.cardSurface, Colors.Main.primary.opacity(0.15)],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
+                                    .background(Colors.Main.cardSurface)
                                     .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                            .stroke(Colors.Main.primary.opacity(0.4), lineWidth: 2)
+                                            .stroke(Colors.Main.primary, lineWidth: 2)
                                     )
-                                    .shadow(color: Colors.Main.primary.opacity(0.2), radius: 20, y: 10)
                                     .transition(.asymmetric(insertion: .scale, removal: .opacity).combined(with: .opacity))
                                 }
                             }
@@ -190,24 +183,19 @@ extension ExplanationScreen {
                         } label: {
                             Text(stateModel.interactionStep == 0 ? "YEA!" : "GOT IT!")
                                 .font(Typography.primaryButton)
-                                .foregroundStyle(.black) // Black text for high contrast on turquoise
+                                .foregroundStyle(.black)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 18)
-                                .background(Colors.Main.accent) // Always Turquoise/Cyan
+                                .background(Colors.Main.accent)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .shadow(color: Colors.Main.accent.opacity(0.4), radius: 20, y: 8)
                         }
                     }
                     .padding(.horizontal, StaticData.Layout.screenPadding)
                     .padding(.bottom, .space24)
                     .background(
-                        LinearGradient(
-                            colors: [Colors.Main.background.opacity(0), Colors.Main.background],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .padding(.top, -40)
-                        .ignoresSafeArea()
+                        Colors.Main.background
+                            .padding(.top, -40)
+                            .ignoresSafeArea()
                     )
                 }
                 .onAppear {
