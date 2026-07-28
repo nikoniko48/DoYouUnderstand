@@ -16,6 +16,7 @@ final class OnboardingViewModel: StateViewModelProtocol {
     private(set) var actions: Actions = .init()
     private let output: (Output) -> Void
     private var useMocks: Bool
+    private var processingTask: Task<Void, Never>?
 
     init(useMocks: Bool = false, output: @escaping (Output) -> Void) {
         self.useMocks = useMocks
@@ -40,8 +41,8 @@ extension OnboardingViewModel {
 extension OnboardingViewModel {
 
     struct Actions {
-        var onSelectContext: ((StateModel.CommunicationContext) -> Void)?
-        var onSelectGoal: ((StateModel.Goal) -> Void)?
+        var onSelectTriggerMessage: ((StateModel.TriggerMessage) -> Void)?
+        var onSelectCopingStyle: ((StateModel.CopingStyle) -> Void)?
         var onNext: (() -> Void)?
         var onSwipeBack: (() -> Void)?
         var onFinish: (() -> Void)?
@@ -49,12 +50,12 @@ extension OnboardingViewModel {
 
     private func setActions() {
 
-        actions.onSelectContext = { [weak self] context in
-            self?.selectContext(context)
+        actions.onSelectTriggerMessage = { [weak self] message in
+            self?.selectTriggerMessage(message)
         }
 
-        actions.onSelectGoal = { [weak self] goal in
-            self?.selectGoal(goal)
+        actions.onSelectCopingStyle = { [weak self] style in
+            self?.selectCopingStyle(style)
         }
 
         actions.onNext = { [weak self] in
@@ -75,27 +76,33 @@ extension OnboardingViewModel {
 
 extension OnboardingViewModel {
 
-    private func selectContext(_ context: StateModel.CommunicationContext) {
+    private func selectTriggerMessage(_ message: StateModel.TriggerMessage) {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            stateModel.selectedContext = context
+            stateModel.selectedTriggerMessage = message
         }
     }
 
-    private func selectGoal(_ goal: StateModel.Goal) {
+    private func selectCopingStyle(_ style: StateModel.CopingStyle) {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            stateModel.selectedGoal = goal
+            stateModel.selectedCopingStyle = style
         }
     }
 
     private func advance() {
         guard stateModel.currentStep < stateModel.totalSteps - 1 else { return }
+        stateModel.direction = .forward
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             stateModel.currentStep += 1
+        }
+        if stateModel.isProcessingStep {
+            startProcessing()
         }
     }
 
     private func retreat() {
-        guard stateModel.currentStep > 0 else { return }
+        guard stateModel.currentStep > 0, stateModel.canSwipeBack else { return }
+        cancelProcessing()
+        stateModel.direction = .backward
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             stateModel.currentStep -= 1
         }
@@ -104,5 +111,44 @@ extension OnboardingViewModel {
     private func finish() {
         // TODO: Persist selected onboarding answers (Supabase) once backend is wired up.
         output(.finishOnboarding)
+    }
+}
+
+// MARK: - Fake Processing -
+
+extension OnboardingViewModel {
+
+    private func startProcessing() {
+        stateModel.processingMessageIndex = 0
+
+        processingTask = Task { [weak self] in
+            guard let self else { return }
+            let tickNanoseconds: UInt64 = 500_000_000
+
+            for _ in 0..<StateModel.processingTickCount {
+                try? await Task.sleep(nanoseconds: tickNanoseconds)
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    self.stateModel.processingMessageIndex += 1
+                }
+            }
+
+            guard !Task.isCancelled else { return }
+            self.finishProcessing()
+        }
+    }
+
+    private func finishProcessing() {
+        processingTask = nil
+        guard stateModel.isProcessingStep else { return }
+        stateModel.direction = .forward
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            stateModel.currentStep += 1
+        }
+    }
+
+    private func cancelProcessing() {
+        processingTask?.cancel()
+        processingTask = nil
     }
 }
