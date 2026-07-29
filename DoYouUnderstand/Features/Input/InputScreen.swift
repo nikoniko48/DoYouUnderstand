@@ -15,8 +15,12 @@ struct InputScreen: View {
     
     @State var viewModel: InputViewModel
     
-    init(output: @escaping (InputViewModel.Output) -> Void) {
+    init(
+        historyService: HistoryServiceProtocol = HistoryServiceProvider.shared,
+        output: @escaping (InputViewModel.Output) -> Void
+    ) {
         self.viewModel = .init(
+            historyService: historyService,
             useMocks: true,
             output: output
         )
@@ -83,46 +87,76 @@ extension InputScreen {
                         VStack(spacing: .space16) {
                             
                             if stateModel.images.isEmpty {
-                                ZStack(alignment: .topLeading) {
-                                    
-                                    if stateModel.inputText.isEmpty {
-                                        Text("Paste text or write here...")
+                                VStack(alignment: .leading, spacing: .space6) {
+                                    ZStack(alignment: .topLeading) {
+
+                                        if stateModel.inputText.isEmpty {
+                                            Text("Paste text or write here...")
+                                                .font(Typography.bodyText)
+                                                .foregroundStyle(Colors.Text.muted)
+                                                .padding(.horizontal, .space16)
+                                                .padding(.vertical, .space16)
+                                                .allowsHitTesting(false)
+                                        }
+
+                                        TextField("Paste text or write here...", text: $stateModel.inputText, axis: .vertical)
+                                            .focused($isFocused)
                                             .font(Typography.bodyText)
-                                            .foregroundStyle(Colors.Text.muted)
+                                            .foregroundStyle(Colors.Text.title)
+                                            .tint(Colors.Main.primary)
+                                            .lineLimit(8...(isFocused ? 8 : 15))
+                                            .animation(.easeInOut(duration: 0.2), value: isFocused)
                                             .padding(.horizontal, .space16)
                                             .padding(.vertical, .space16)
-                                            .allowsHitTesting(false)
-                                    }
-                                    
-                                    TextField("Paste text or write here...", text: $stateModel.inputText, axis: .vertical)
-                                        .focused($isFocused)
-                                        .font(Typography.bodyText)
-                                        .foregroundStyle(Colors.Text.title)
-                                        .tint(Colors.Main.primary)
-                                        .lineLimit(8...(isFocused ? 8 : 15))
-                                        .animation(.easeInOut(duration: 0.2), value: isFocused)
-                                        .padding(.horizontal, .space16)
-                                        .padding(.vertical, .space16)
-                                    
-                                    VStack {
-                                        Spacer()
-                                        HStack {
+
+                                        VStack {
                                             Spacer()
-                                            Text("\(stateModel.characterCount)/\(stateModel.maxCharacters) chars")
-                                                .font(Typography.smallBody)
-                                                .foregroundStyle(stateModel.isLimitExceeded ? Color.red : Colors.Text.muted)
-                                                .padding(.space12)
-                                                .animation(.easeInOut, value: stateModel.isLimitExceeded)
+                                            HStack {
+                                                Spacer()
+                                                Text("\(stateModel.characterCount)/\(stateModel.maxCharacters) chars")
+                                                    .font(Typography.smallBody)
+                                                    .foregroundStyle(stateModel.isLimitExceeded ? Color.red : Colors.Text.muted)
+                                                    .padding(.space12)
+                                                    .animation(.easeInOut, value: stateModel.isLimitExceeded)
+                                            }
                                         }
                                     }
+                                    .frame(minHeight: 200)
+                                    .background(Colors.Main.cardSurface)
+                                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                                            .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                                    )
+
+                                    // MARK: - Clear / Paste Text -
+                                    HStack(spacing: .space16) {
+                                        Button {
+                                            actions.onTap?(.clearText)
+                                        } label: {
+                                            HStack(spacing: .space4) {
+                                                Image(systemName: "xmark")
+                                                Text("Clear")
+                                            }
+                                            .font(Typography.smallBody)
+                                            .foregroundStyle(Colors.Text.muted)
+                                        }
+
+                                        Spacer()
+
+                                        Button {
+                                            actions.onTap?(.pasteText)
+                                        } label: {
+                                            HStack(spacing: .space4) {
+                                                Image(systemName: "doc.on.clipboard")
+                                                Text("Paste")
+                                            }
+                                            .font(Typography.smallBody)
+                                            .foregroundStyle(Colors.Text.muted)
+                                        }
+                                    }
+                                    .padding(.horizontal, .space4)
                                 }
-                                .frame(minHeight: 200)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                        .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
                             } else {
                                 // MARK: - Photo gallery -
                                 ScrollView(.horizontal, showsIndicators: false) {
@@ -273,7 +307,7 @@ extension InputScreen {
                             ProgressView()
                                 .tint(Colors.Main.accent)
                                 .scaleEffect(1.5)
-                            Text("Processing photos...")
+                            Text(stateModel.loaderMessage)
                                 .font(Typography.bodyText)
                                 .foregroundStyle(.white)
                         }
@@ -289,6 +323,20 @@ extension InputScreen {
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: stateModel.isLoaderPresented)
+            // MARK: - ERROR ALERT -
+            .alert(
+                "Analysis Failed",
+                isPresented: Binding(
+                    get: { stateModel.errorMessage != nil },
+                    set: { isPresented in
+                        if !isPresented { stateModel.errorMessage = nil }
+                    }
+                )
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(stateModel.errorMessage ?? "")
+            }
             // MARK: - CAMERA -
             .fullScreenCover(isPresented: $stateModel.isCameraPresented) {
                 CameraPicker(
@@ -366,7 +414,7 @@ extension InputScreen {
 }
 
 #Preview {
-    let view = InputScreen(output: { _ in })
+    let view = InputScreen(historyService: MockHistoryService(), output: { _ in })
     view.viewModel.state = .loaded(InputViewModel.StateModel())
     return view
 }

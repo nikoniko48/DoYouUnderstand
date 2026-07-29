@@ -14,8 +14,12 @@ struct ExplanationScreen: View {
     
     @State var viewModel: ExplanationViewModel
     
-    init(historyItemId: String? = nil, output: @escaping (ExplanationViewModel.Output) -> Void) {
-        self.viewModel = .init(useMocks: true, historyItemId: historyItemId, output: output)
+    init(
+        historyService: HistoryServiceProtocol = HistoryServiceProvider.shared,
+        destination: ExplanationViewModel.Destination,
+        output: @escaping (ExplanationViewModel.Output) -> Void
+    ) {
+        self.viewModel = .init(historyService: historyService, destination: destination, output: output)
     }
     
     var body: some View {
@@ -242,5 +246,9 @@ extension ExplanationScreen {
 }
 
 #Preview {
-    ExplanationScreen(output: { _ in })
+    ExplanationScreen(
+        historyService: MockHistoryService(),
+        destination: .history(id: "mock_1"),
+        output: { _ in }
+    )
 }

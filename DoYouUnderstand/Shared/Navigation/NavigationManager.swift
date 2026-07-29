@@ -11,8 +11,8 @@ enum Route: Hashable {
     case onboarding
     case dashboard
     case input
-    case explenation(String?)
-    case reply(String?)
+    case explenation(ExplanationViewModel.Destination)
+    case reply(ReplyViewModel.Destination)
     case faq
     case settings
 }
@@ -69,38 +69,40 @@ extension NavigationManager {
         case .input:
             navigate(to: .input)
         case .explanation(let id):
-            navigate(to: .explenation(id))
+            navigate(to: .explenation(.history(id: id)))
         case .reply(let id):
-            navigate(to: .reply(id))
+            navigate(to: .reply(.history(id: id)))
         case .faq:
             navigate(to: .faq)
         case .settings:
             navigate(to: .settings)
         }
     }
-    
+
     func handleInput(_ output: InputViewModel.Output) {
         switch output {
         case .goBack:
             popBack()
-        case .explain:
-            navigate(to: .explenation(nil))
-        case .reply:
-            navigate(to: .reply(nil))
+        case .explain(let payload):
+            navigate(to: .explenation(.result(payload)))
+        case .reply(let payload):
+            navigate(to: .reply(.result(payload)))
         }
     }
     
     func handleExplanation(_ output: ExplanationViewModel.Output) {
         switch output {
         case .goBack:
-            popBack()
+            // Whether reached via Dashboard history or a fresh Input analysis,
+            // Dashboard is always root - this skips back over Input entirely.
+            popToRoot()
         }
     }
-    
+
     func handleReply(_ output: ReplyViewModel.Output) {
         switch output {
         case .goBack:
-            popBack()
+            popToRoot()
         }
     }
 

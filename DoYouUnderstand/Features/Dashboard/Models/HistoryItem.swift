@@ -23,3 +23,22 @@ struct HistoryItem: Identifiable {
         }
     }
 }
+
+extension HistoryItem {
+
+    init(record: HistoryRecord) {
+        self.init(
+            id: record.id,
+            snippet: record.snippet,
+            tone: record.tone,
+            timestamp: Self.formattedTimestamp(record.timestamp),
+            type: record.type
+        )
+    }
+
+    private static func formattedTimestamp(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+}

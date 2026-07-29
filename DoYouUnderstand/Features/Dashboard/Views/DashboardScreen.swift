@@ -14,9 +14,12 @@ struct DashboardScreen: View {
     
     @State var viewModel: DashboardViewModel
     
-    init(output: @escaping (DashboardViewModel.Output) -> Void) {
+    init(
+        historyService: HistoryServiceProtocol = HistoryServiceProvider.shared,
+        output: @escaping (DashboardViewModel.Output) -> Void
+    ) {
         self.viewModel = .init(
-            useMocks: true,
+            historyService: historyService,
             output: output
         )
     }
@@ -104,13 +107,29 @@ extension DashboardScreen {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.bottom, .space8)
                 
-                ScrollView(.vertical, showsIndicators: false) {
-                    LazyVStack(spacing: .space12) {
-                        if stateModel.history.isEmpty {
-                            Text("No analyses yet. Start decoding!")
-                                .font(Typography.bodyText)
+                Group {
+                    if stateModel.history.isEmpty {
+                        VStack(spacing: .space16) {
+                            Image(systemName: "doc.text.magnifyingglass")
+                                .font(.system(size: 40, weight: .light))
                                 .foregroundStyle(Colors.Text.muted)
-                        } else {
+
+                            VStack(spacing: .space6) {
+                                Text("No analyses yet")
+                                    .font(Typography.screenTitle)
+                                    .foregroundStyle(Colors.Text.title)
+
+                                Text("Start decoding a message to see\nyour history here.")
+                                    .font(Typography.bodyText)
+                                    .foregroundStyle(Colors.Text.muted)
+                                    .multilineTextAlignment(.center)
+                            }
+                        }
+                        .padding(.horizontal, StaticData.Layout.majorSpacing)
+                        .padding(.bottom, StaticData.Layout.floatingButtonSize.height)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    } else {
+                        List {
                             ForEach(stateModel.history) { item in
                                 Button {
                                     actions.onTapHistoryItem?(item)
@@ -118,9 +137,29 @@ extension DashboardScreen {
                                     HistoryCardView(item: item)
                                 }
                                 .buttonStyle(.plain)
+                                .listRowInsets(EdgeInsets())
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .padding(.bottom, .space12)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        actions.onDeleteHistoryItem?(item)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
+                        .listStyle(.plain)
+                        .scrollContentBackground(.hidden)
+                        .environment(\.defaultMinListRowHeight, 0)
+                        .refreshable {
+                            actions.onRefresh?()
+                        }
                     }
+                }
+                .onAppear {
+                    actions.onRefresh?()
                 }
                 .safeAreaInset(edge: .bottom) {
                     Button {
@@ -142,11 +181,5 @@ extension DashboardScreen {
 }
 
 #Preview {
-    let view = DashboardScreen(output: { _ in })
-    
-    view.viewModel.state = .loaded(
-        DashboardViewModel.StateModel(history: HistoryItem.mockList, scansRemaining: 7)
-    )
-    
-    return view
+    DashboardScreen(historyService: MockHistoryService(), output: { _ in })
 }

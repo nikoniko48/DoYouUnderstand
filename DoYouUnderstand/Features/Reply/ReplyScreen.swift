@@ -14,8 +14,12 @@ struct ReplyScreen: View {
     
     @State var viewModel: ReplyViewModel
     
-    init(historyItemId: String? = nil, output: @escaping (ReplyViewModel.Output) -> Void) {
-        self.viewModel = .init(useMocks: true, historyItemId: historyItemId, output: output)
+    init(
+        historyService: HistoryServiceProtocol = HistoryServiceProvider.shared,
+        destination: ReplyViewModel.Destination,
+        output: @escaping (ReplyViewModel.Output) -> Void
+    ) {
+        self.viewModel = .init(historyService: historyService, destination: destination, output: output)
     }
     
     var body: some View {
@@ -123,7 +127,29 @@ extension ReplyScreen {
                                 ReplyOptionCard(option: $option, actions: actions)
                             }
                         }
-                        
+
+                        // MARK: - Generate More Tones
+                        Button {
+                            actions.onGenerateMoreTones?()
+                        } label: {
+                            HStack(spacing: .space8) {
+                                if stateModel.isGeneratingMoreTones {
+                                    ProgressView()
+                                        .tint(.black)
+                                } else {
+                                    Image(systemName: "sparkles")
+                                    Text("Generate More Tones")
+                                }
+                            }
+                            .font(Typography.smallBody.weight(.bold))
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Colors.Main.accent)
+                            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                        }
+                        .disabled(stateModel.isGeneratingMoreTones)
+
                         Spacer()
                     }
                     .padding(.horizontal, StaticData.Layout.screenPadding)
@@ -237,7 +263,26 @@ extension ReplyScreen {
                                     .stroke(option.tone.color.opacity(0.4), lineWidth: 1)
                             )
                         }
-                        
+
+                        Button {
+                            actions.onToggleTweak?(option.id)
+                        } label: {
+                            HStack(spacing: .space6) {
+                                Image(systemName: "slider.horizontal.3")
+                                Text("Tweak")
+                            }
+                            .font(Theme.Typography.smallBody.weight(.bold))
+                            .foregroundStyle(option.isTweaking ? option.tone.color.contrastingForeground : option.tone.color)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, .space16)
+                            .background(option.isTweaking ? option.tone.color : Theme.Colors.Main.cardSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(option.tone.color.opacity(0.4), lineWidth: 1)
+                            )
+                        }
+
                         Button {
                             actions.onCopy?(option.id)
                         } label: {
@@ -247,7 +292,7 @@ extension ReplyScreen {
                                     Text("Copied!")
                                 }
                                 .opacity(option.isCopied ? 1 : 0)
-                                
+
                                 HStack(spacing: .space6) {
                                     Image(systemName: "doc.on.doc")
                                     Text("Copy Reply")
@@ -263,6 +308,11 @@ extension ReplyScreen {
                         }
                     }
                     .transition(.opacity)
+
+                    if option.isTweaking {
+                        TweakSection(option: $option, actions: actions)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                 }
             }
             .padding(.space16)
@@ -274,10 +324,67 @@ extension ReplyScreen {
             )
             .animation(.easeInOut(duration: 0.25), value: option.isEditing)
             .animation(.easeInOut(duration: 0.25), value: option.isCopied)
+            .animation(.easeInOut(duration: 0.25), value: option.isTweaking)
+        }
+    }
+
+    struct TweakSection: View {
+        @Binding var option: ReplyViewModel.StateModel.ReplyOption
+        let actions: ReplyViewModel.Actions
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: .space12) {
+                HStack {
+                    Text(option.tone.tweakLowLabel.uppercased())
+                        .font(Theme.Typography.tinyLabel)
+                        .foregroundStyle(Theme.Colors.Text.muted)
+
+                    Spacer()
+
+                    Text(option.tone.tweakHighLabel.uppercased())
+                        .font(Theme.Typography.tinyLabel)
+                        .foregroundStyle(Theme.Colors.Text.muted)
+                }
+
+                Slider(value: $option.tweakValue, in: 0...1)
+                    .tint(option.tone.color)
+
+                Button {
+                    actions.onRegenerate?(option.id)
+                } label: {
+                    HStack(spacing: .space6) {
+                        if option.isRegenerating {
+                            ProgressView()
+                                .tint(option.tone.color.contrastingForeground)
+                        } else {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                            Text("Regenerate")
+                        }
+                    }
+                    .font(Theme.Typography.smallBody.weight(.bold))
+                    .foregroundStyle(option.tone.color.contrastingForeground)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(option.tone.color)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(option.isRegenerating)
+            }
+            .padding(.space12)
+            .background(Theme.Colors.Main.background)
+            .clipShape(RoundedRectangle(cornerRadius: .space12))
+            .overlay(
+                RoundedRectangle(cornerRadius: .space12)
+                    .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
+            )
         }
     }
 }
 
 #Preview {
-    ReplyScreen(output: { _ in })
+    ReplyScreen(
+        historyService: MockHistoryService(),
+        destination: .history(id: "mock_2"),
+        output: { _ in }
+    )
 }

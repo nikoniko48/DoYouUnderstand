@@ -43,6 +43,7 @@ extension OnboardingViewModel {
     struct Actions {
         var onSelectTriggerMessage: ((StateModel.TriggerMessage) -> Void)?
         var onSelectCopingStyle: ((StateModel.CopingStyle) -> Void)?
+        var onSelectPlan: ((StateModel.PricingPlan) -> Void)?
         var onNext: (() -> Void)?
         var onSwipeBack: (() -> Void)?
         var onFinish: (() -> Void)?
@@ -56,6 +57,10 @@ extension OnboardingViewModel {
 
         actions.onSelectCopingStyle = { [weak self] style in
             self?.selectCopingStyle(style)
+        }
+
+        actions.onSelectPlan = { [weak self] plan in
+            self?.selectPlan(plan)
         }
 
         actions.onNext = { [weak self] in
@@ -85,6 +90,12 @@ extension OnboardingViewModel {
     private func selectCopingStyle(_ style: StateModel.CopingStyle) {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             stateModel.selectedCopingStyle = style
+        }
+    }
+
+    private func selectPlan(_ plan: StateModel.PricingPlan) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            stateModel.selectedPlan = plan
         }
     }
 

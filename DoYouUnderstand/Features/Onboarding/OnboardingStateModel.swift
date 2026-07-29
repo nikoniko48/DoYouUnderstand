@@ -16,8 +16,9 @@ extension OnboardingViewModel {
         var selectedTriggerMessage: TriggerMessage?
         var selectedCopingStyle: CopingStyle?
         var processingMessageIndex: Int
+        var selectedPlan: PricingPlan
 
-        let totalSteps: Int = 4
+        let totalSteps: Int = Step.allCases.count
         let progressStepCount: Int = 3
 
         init(
@@ -25,13 +26,15 @@ extension OnboardingViewModel {
             direction: StepDirection = .forward,
             selectedTriggerMessage: TriggerMessage? = nil,
             selectedCopingStyle: CopingStyle? = nil,
-            processingMessageIndex: Int = 0
+            processingMessageIndex: Int = 0,
+            selectedPlan: PricingPlan = .annual
         ) {
             self.currentStep = currentStep
             self.direction = direction
             self.selectedTriggerMessage = selectedTriggerMessage
             self.selectedCopingStyle = selectedCopingStyle
             self.processingMessageIndex = processingMessageIndex
+            self.selectedPlan = selectedPlan
         }
 
         var step: Step {
@@ -46,8 +49,15 @@ extension OnboardingViewModel {
             step == .finisher
         }
 
+        /// The thin progress bar + "STEP X OF Y" label only make sense for the
+        /// interactive quiz steps - the processing, privacy, and paywall
+        /// screens that follow all hide it.
+        var showsProgressHeader: Bool {
+            step == .triggerMessage || step == .copingStyle || step == .processing
+        }
+
         var canSwipeBack: Bool {
-            step != .processing && step != .finisher
+            step == .triggerMessage || step == .copingStyle
         }
 
         var displayStepNumber: Int {
@@ -60,7 +70,7 @@ extension OnboardingViewModel {
                 return selectedTriggerMessage != nil
             case .copingStyle:
                 return selectedCopingStyle != nil
-            case .processing, .finisher:
+            case .processing, .privacy, .finisher:
                 return true
             }
         }
@@ -94,7 +104,44 @@ extension OnboardingViewModel.StateModel {
         case triggerMessage = 0
         case copingStyle = 1
         case processing = 2
-        case finisher = 3
+        case privacy = 3
+        case finisher = 4
+    }
+
+    enum PricingPlan: String, CaseIterable, Identifiable {
+        case monthly = "Monthly"
+        case annual = "Annual"
+
+        var id: String { rawValue }
+
+        var period: String {
+            switch self {
+            case .monthly: return "/ month"
+            case .annual: return "/ year"
+            }
+        }
+
+        var standardPrice: String {
+            switch self {
+            case .monthly: return "$10"
+            case .annual: return "$100"
+            }
+        }
+
+        var discountedPrice: String {
+            switch self {
+            case .monthly: return "$8"
+            case .annual: return "$79"
+            }
+        }
+
+        var badge: String? {
+            self == .annual ? "BEST VALUE" : nil
+        }
+
+        func price(discountActive: Bool) -> String {
+            discountActive ? discountedPrice : standardPrice
+        }
     }
 
     enum TriggerMessage: String, CaseIterable, Identifiable {

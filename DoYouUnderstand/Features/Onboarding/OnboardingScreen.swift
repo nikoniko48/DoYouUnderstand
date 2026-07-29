@@ -40,6 +40,19 @@ extension OnboardingScreen {
         let stateModel: OnboardingViewModel.StateModel
         let actions: OnboardingViewModel.Actions
 
+        // Persists across app restarts - the 24h discount window starts the
+        // first time onboarding is shown and never resets once it expires.
+        @AppStorage("onboardingDiscountExpiresAt") private var discountExpiresAtRaw: Double = 0
+        @State private var now: Date = Date()
+
+        var discountExpiresAt: Date {
+            Date(timeIntervalSince1970: discountExpiresAtRaw)
+        }
+
+        var isDiscountActive: Bool {
+            now < discountExpiresAt
+        }
+
         var body: some View {
             VStack(spacing: .space0) {
                 header
@@ -70,6 +83,14 @@ extension OnboardingScreen {
                     }
                 }
             )
+            .onAppear {
+                if discountExpiresAtRaw == 0 {
+                    discountExpiresAtRaw = Date().addingTimeInterval(24 * 60 * 60).timeIntervalSince1970
+                }
+            }
+            .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { tick in
+                now = tick
+            }
         }
     }
 }
@@ -80,7 +101,7 @@ extension OnboardingScreen.ContentView {
 
     @ViewBuilder
     private var header: some View {
-        if !stateModel.isFinisherStep {
+        if stateModel.showsProgressHeader {
             VStack(alignment: .leading, spacing: .space16) {
                 OnboardingScreen.OnboardingProgressBar(
                     totalSteps: stateModel.progressStepCount,
@@ -108,8 +129,16 @@ extension OnboardingScreen.ContentView {
             OnboardingScreen.CopingStyleStepView(stateModel: stateModel, actions: actions)
         case .processing:
             OnboardingScreen.ProcessingStepView(message: stateModel.processingMessage)
+        case .privacy:
+            OnboardingScreen.PrivacyStepView()
         case .finisher:
-            OnboardingScreen.FinisherStepView()
+            OnboardingScreen.FinisherStepView(
+                stateModel: stateModel,
+                actions: actions,
+                isDiscountActive: isDiscountActive,
+                discountExpiresAt: discountExpiresAt,
+                now: now
+            )
         }
     }
 }
@@ -121,7 +150,7 @@ extension OnboardingScreen.ContentView {
     @ViewBuilder
     private var footer: some View {
         switch stateModel.step {
-        case .triggerMessage, .copingStyle:
+        case .triggerMessage, .copingStyle, .privacy:
             Button {
                 actions.onNext?()
             } label: {
@@ -144,16 +173,23 @@ extension OnboardingScreen.ContentView {
             EmptyView()
 
         case .finisher:
-            Button {
-                actions.onFinish?()
-            } label: {
-                Text("ARM YOURSELF")
-                    .font(Theme.Typography.primaryButton)
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(Theme.Colors.Main.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+            VStack(spacing: .space8) {
+                Button {
+                    actions.onFinish?()
+                } label: {
+                    Text("START FREE TRIAL")
+                        .font(Theme.Typography.primaryButton)
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(Theme.Colors.Main.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                }
+
+                Text("3 free analyses, then \(stateModel.selectedPlan.price(discountActive: isDiscountActive))\(stateModel.selectedPlan.period). Cancel anytime.")
+                    .font(Theme.Typography.smallBody)
+                    .foregroundStyle(Theme.Colors.Text.muted)
+                    .multilineTextAlignment(.center)
             }
         }
     }
@@ -252,16 +288,65 @@ extension OnboardingScreen {
         }
     }
 
+    struct Feature: Identifiable {
+        let id = UUID()
+        let icon: String
+        let text: String
+        let toneColor: Color
+    }
+
+    struct PrivacyStepView: View {
+
+        private static let points: [Feature] = [
+            Feature(icon: "lock.fill", text: "Processed securely, then forgotten by our servers", toneColor: Theme.Colors.Tone.overEager),
+            Feature(icon: "internaldrive.fill", text: "Your history lives only on this device", toneColor: Theme.Colors.Tone.anxious),
+            Feature(icon: "xmark.icloud.fill", text: "Zero cloud databases - nothing to breach or sell", toneColor: Theme.Colors.Tone.condescending)
+        ]
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: .space24) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 36, weight: .semibold))
+                    .foregroundStyle(Theme.Colors.Text.title)
+
+                VStack(alignment: .leading, spacing: .space12) {
+                    Text("Your messages never leave your pocket.")
+                        .font(Theme.Typography.hugeTitle)
+                        .foregroundStyle(Theme.Colors.Text.title)
+
+                    Text("This app runs on a local-first architecture. No account, no sign-up, no server-side profile of you.")
+                        .font(Theme.Typography.bodyText)
+                        .foregroundStyle(Theme.Colors.Text.muted)
+                        .lineSpacing(4)
+                }
+
+                VStack(alignment: .leading, spacing: .space16) {
+                    ForEach(Self.points) { point in
+                        FinisherFeatureRow(icon: point.icon, text: point.text, toneColor: point.toneColor)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     struct FinisherStepView: View {
 
-        private struct Feature: Identifiable {
-            let id = UUID()
-            let icon: String
-            let text: String
-            let toneColor: Color
+        let stateModel: OnboardingViewModel.StateModel
+        let actions: OnboardingViewModel.Actions
+        let isDiscountActive: Bool
+        let discountExpiresAt: Date
+        let now: Date
+
+        private var remainingTimeString: String {
+            let remaining = max(0, Int(discountExpiresAt.timeIntervalSince(now)))
+            let hours = remaining / 3600
+            let minutes = (remaining % 3600) / 60
+            let seconds = remaining % 60
+            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         }
 
-        private static let features: [Feature] = [
+        private static let features: [OnboardingScreen.Feature] = [
             Feature(icon: "magnifyingglass", text: "Decode hidden meanings", toneColor: Theme.Colors.Tone.overEager),
             Feature(icon: "shield.fill", text: "Set firm boundaries", toneColor: Theme.Colors.Tone.passiveAggressive),
             Feature(icon: "bolt.fill", text: "Generate bulletproof replies", toneColor: Theme.Colors.Tone.sarcastic)
@@ -296,8 +381,127 @@ extension OnboardingScreen {
                         FinisherFeatureRow(icon: feature.icon, text: feature.text, toneColor: feature.toneColor)
                     }
                 }
+
+                // MARK: - Free Trial Callout
+                HStack(spacing: .space12) {
+                    Image(systemName: "gift.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(Theme.Colors.Main.background)
+                        .frame(width: 40, height: 40)
+                        .background(Theme.Colors.Main.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: .space8))
+
+                    VStack(alignment: .leading, spacing: .space2) {
+                        Text("3 FREE USES")
+                            .font(Theme.Typography.badgeLabel)
+                            .foregroundStyle(Theme.Colors.Text.title)
+
+                        Text("Try it free. No credit card required.")
+                            .font(Theme.Typography.smallBody)
+                            .foregroundStyle(Theme.Colors.Text.muted)
+                    }
+
+                    Spacer(minLength: .space0)
+                }
+                .padding(.space16)
+                .background(Theme.Colors.Main.cardSurface)
+                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                        .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
+                )
+
+                // MARK: - Pricing
+                VStack(alignment: .leading, spacing: .space12) {
+                    if isDiscountActive {
+                        HStack(spacing: .space6) {
+                            Image(systemName: "clock.fill")
+                            Text("LIMITED OFFER ENDS IN \(remainingTimeString)")
+                        }
+                        .font(Theme.Typography.tinyLabel)
+                        .foregroundStyle(Theme.Colors.Main.background)
+                        .padding(.horizontal, .space12)
+                        .padding(.vertical, .space6)
+                        .background(Theme.Colors.Main.accent)
+                        .clipShape(Capsule())
+                    }
+
+                    VStack(spacing: .space12) {
+                        ForEach(OnboardingViewModel.StateModel.PricingPlan.allCases) { plan in
+                            PricingPlanRow(
+                                plan: plan,
+                                isSelected: stateModel.selectedPlan == plan,
+                                isDiscountActive: isDiscountActive
+                            ) {
+                                actions.onSelectPlan?(plan)
+                            }
+                        }
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    struct PricingPlanRow: View {
+
+        let plan: OnboardingViewModel.StateModel.PricingPlan
+        let isSelected: Bool
+        let isDiscountActive: Bool
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                HStack(spacing: .space12) {
+                    VStack(alignment: .leading, spacing: .space4) {
+                        HStack(spacing: .space8) {
+                            Text(plan.rawValue)
+                                .font(Theme.Typography.bodyText.weight(.bold))
+
+                            if let badge = plan.badge {
+                                Text(badge)
+                                    .font(Theme.Typography.tinyLabel)
+                                    .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Main.accent)
+                                    .padding(.horizontal, .space6)
+                                    .padding(.vertical, .space2)
+                                    .overlay(
+                                        Capsule().stroke(isSelected ? Theme.Colors.Main.background : Theme.Colors.Main.accent, lineWidth: 1)
+                                    )
+                            }
+                        }
+
+                        if isDiscountActive {
+                            HStack(spacing: .space6) {
+                                Text(plan.standardPrice)
+                                    .strikethrough()
+                                    .foregroundStyle(isSelected ? Theme.Colors.Main.background.opacity(0.6) : Theme.Colors.Text.muted)
+
+                                Text("\(plan.discountedPrice)\(plan.period)")
+                            }
+                            .font(Theme.Typography.smallBody)
+                        } else {
+                            Text("\(plan.standardPrice)\(plan.period)")
+                                .font(Theme.Typography.smallBody)
+                        }
+                    }
+                    .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Text.title)
+
+                    Spacer()
+
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Theme.Colors.Main.background)
+                        .opacity(isSelected ? 1 : 0)
+                }
+                .padding(.space16)
+                .background(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.cardSurface)
+                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                        .stroke(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.borderSubtle, lineWidth: isSelected ? 2 : 1)
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -323,6 +527,7 @@ extension OnboardingScreen {
                 Text(text)
                     .font(Theme.Typography.bodyText.weight(.semibold))
                     .foregroundStyle(Theme.Colors.Text.title)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }

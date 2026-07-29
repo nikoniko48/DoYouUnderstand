@@ -28,12 +28,12 @@ struct ContentView: View {
                     InputScreen { output in
                         router.handle(.input(output))
                     }
-                case .explenation(let id):
-                    ExplanationScreen(historyItemId: id) { output in
+                case .explenation(let destination):
+                    ExplanationScreen(destination: destination) { output in
                         router.handle(.explanation(output))
                     }
-                case .reply(let id):
-                    ReplyScreen(historyItemId: id) { output in
+                case .reply(let destination):
+                    ReplyScreen(destination: destination) { output in
                         router.handle(.reply(output))
                     }
                 case .faq:

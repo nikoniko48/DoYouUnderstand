@@ -59,4 +59,32 @@ extension Tone {
         case .friendly: return "Casual & Friendly"
         }
     }
+
+    /// Tweak-slider label for the "toned down" end (0.0).
+    var tweakLowLabel: String {
+        switch self {
+        case .anxious: return "Calmer & Confident"
+        case .condescending: return "More Humble"
+        case .overEager: return "More Chill"
+        case .passiveAggressive: return "More Direct"
+        case .sarcastic: return "More Sincere"
+        case .professional: return "Lighter & Friendly"
+        case .assertive: return "Softer & Diplomatic"
+        case .friendly: return "More Reserved"
+        }
+    }
+
+    /// Tweak-slider label for the "amplified" end (1.0).
+    var tweakHighLabel: String {
+        switch self {
+        case .anxious: return "Even More Anxious"
+        case .condescending: return "Even More Condescending"
+        case .overEager: return "Even More Eager"
+        case .passiveAggressive: return "Even More Passive-Aggressive"
+        case .sarcastic: return "Even More Sarcastic"
+        case .professional: return "Ultra Formal"
+        case .assertive: return "Extremely Firm"
+        case .friendly: return "Extra Warm & Casual"
+        }
+    }
 }

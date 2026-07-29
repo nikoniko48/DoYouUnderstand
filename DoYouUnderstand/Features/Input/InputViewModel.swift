@@ -17,11 +17,17 @@ final class InputViewModel: StateViewModelProtocol {
     
     private(set) var actions: Actions = .init()
     private let output: (Output) -> Void
-    
+    private let historyService: HistoryServiceProtocol
+
     // maybe update later
     private var useMocks: Bool
-    
-    init(useMocks: Bool = false, output: @escaping (Output) -> Void) {
+
+    init(
+        historyService: HistoryServiceProtocol = HistoryServiceProvider.shared,
+        useMocks: Bool = false,
+        output: @escaping (Output) -> Void
+    ) {
+        self.historyService = historyService
         self.useMocks = useMocks
         self.output = output
         self.stateModel = StateModel()
@@ -36,8 +42,8 @@ extension InputViewModel {
     
     enum Output {
         case goBack
-        case explain
-        case reply
+        case explain(ExplanationViewModel.Payload)
+        case reply(ReplyViewModel.Payload)
     }
 }
 
@@ -58,6 +64,8 @@ extension InputViewModel {
             case explain
             case reply
             case takePhoto
+            case clearText
+            case pasteText
         }
     }
     
@@ -95,6 +103,10 @@ extension InputViewModel {
                 switchAnalysisType(to: .explain)
             case .takePhoto:
                 takePhoto()
+            case .clearText:
+                clearText()
+            case .pasteText:
+                pasteText()
             }
         }
     }
@@ -105,16 +117,32 @@ extension InputViewModel {
 extension InputViewModel {
     
     private func analyse() {
-        // TODO: Backend Call Implementation
-        // Here is where you will send `stateModel.inputText` and `stateModel.selectedType` to your server.
-        print("Submitting text: \(stateModel.inputText) for type: \(stateModel.selectedType)")
-        
-        // Once the backend returns success, route to the next screen based on selection:
-        switch stateModel.selectedType {
-        case .explain:
-            output(.explain)
-        case .reply:
-            output(.reply)
+        let text = stateModel.inputText
+        let images = stateModel.images.compactMap { $0.image.jpegData(compressionQuality: 0.7) }
+        let type = stateModel.selectedType
+
+        stateModel.loaderMessage = "Analyzing your message..."
+        stateModel.isLoaderPresented = true
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                switch type {
+                case .explain:
+                    let payload = try await GeminiService.explain(text: text, images: images)
+                    self.historyService.save(.explanation(payload))
+                    self.stateModel.isLoaderPresented = false
+                    self.output(.explain(payload))
+                case .reply:
+                    let payload = try await GeminiService.reply(text: text, images: images)
+                    self.historyService.save(.reply(payload))
+                    self.stateModel.isLoaderPresented = false
+                    self.output(.reply(payload))
+                }
+            } catch {
+                self.stateModel.isLoaderPresented = false
+                self.stateModel.errorMessage = "Couldn't analyze that message. Please try again."
+            }
         }
     }
     
@@ -125,6 +153,20 @@ extension InputViewModel {
     private func switchAnalysisType(to type: AnalysisType) {
         // Updates the selection card UI
         stateModel.selectedType = type
+    }
+
+    private func clearText() {
+        stateModel.inputText = ""
+    }
+
+    private func pasteText() {
+        guard let pasted = UIPasteboard.general.string, !pasted.isEmpty else { return }
+
+        if stateModel.inputText.isEmpty {
+            stateModel.inputText = pasted
+        } else {
+            stateModel.inputText += "\n" + pasted
+        }
     }
     
     private func takePhoto() {
