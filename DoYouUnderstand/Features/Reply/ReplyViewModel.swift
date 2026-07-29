@@ -57,10 +57,25 @@ extension ReplyViewModel {
         }
 
         let originalMessage: String
+        let extractedText: String
         let tone: Tone
         let toneScore: Int
         let toneQuote: String
         let replies: [ReplyEntry]
+    }
+
+    enum LengthAdjustment {
+        case shorten
+        case lengthen
+
+        var instruction: String {
+            switch self {
+            case .shorten:
+                return "Make this exact response shorter and more concise while keeping the exact same tone."
+            case .lengthen:
+                return "Make this exact response longer and more detailed while keeping the exact same tone."
+            }
+        }
     }
 }
 
@@ -76,6 +91,7 @@ extension ReplyViewModel {
         var onSaveEdit: ((UUID) -> Void)?
         var onToggleTweak: ((UUID) -> Void)?
         var onRegenerate: ((UUID) -> Void)?
+        var onAdjustLength: ((UUID, LengthAdjustment) -> Void)?
         var onGenerateMoreTones: (() -> Void)?
     }
 
@@ -108,6 +124,10 @@ extension ReplyViewModel {
             self?.regenerate(id: id)
         }
 
+        actions.onAdjustLength = { [weak self] id, adjustment in
+            self?.adjustLength(id: id, adjustment: adjustment)
+        }
+
         actions.onGenerateMoreTones = { [weak self] in
             self?.generateMoreTones()
         }
@@ -136,7 +156,10 @@ extension ReplyViewModel {
     }
 
     private func applyPayload(_ payload: Payload) {
-        stateModel.originalMessage = payload.originalMessage
+        // The user may have submitted an image with no typed text - fall back
+        // to the AI's transcription so both the UI and any follow-up request
+        // (e.g. Generate More Tones) always have real text to work with.
+        stateModel.originalMessage = payload.originalMessage.isEmpty ? payload.extractedText : payload.originalMessage
         stateModel.originalTone = .init(tone: payload.tone, score: payload.toneScore, quote: payload.toneQuote)
         stateModel.options = payload.replies.map { StateModel.ReplyOption(tone: $0.tone, text: $0.text) }
         state = .loaded(stateModel)
@@ -195,11 +218,19 @@ extension ReplyViewModel {
 
     private func regenerate(id: UUID) {
         guard let index = stateModel.options.firstIndex(where: { $0.id == id }) else { return }
+        let instruction = Self.tweakInstruction(for: stateModel.options[index])
+        runTweak(id: id, instruction: instruction)
+    }
+
+    private func adjustLength(id: UUID, adjustment: LengthAdjustment) {
+        runTweak(id: id, instruction: adjustment.instruction)
+    }
+
+    private func runTweak(id: UUID, instruction: String) {
+        guard let index = stateModel.options.firstIndex(where: { $0.id == id }) else { return }
         guard !stateModel.options[index].isRegenerating else { return }
 
         let option = stateModel.options[index]
-        let instruction = Self.tweakInstruction(for: option)
-
         stateModel.options[index].isRegenerating = true
 
         Task { [weak self] in

@@ -298,9 +298,9 @@ extension OnboardingScreen {
     struct PrivacyStepView: View {
 
         private static let points: [Feature] = [
-            Feature(icon: "lock.fill", text: "Processed securely, then forgotten by our servers", toneColor: Theme.Colors.Tone.overEager),
-            Feature(icon: "internaldrive.fill", text: "Your history lives only on this device", toneColor: Theme.Colors.Tone.anxious),
-            Feature(icon: "xmark.icloud.fill", text: "Zero cloud databases - nothing to breach or sell", toneColor: Theme.Colors.Tone.condescending)
+            Feature(icon: "lock.fill", text: "Messages are processed ephemerally and securely", toneColor: Theme.Colors.Tone.overEager),
+            Feature(icon: "internaldrive.fill", text: "History is saved strictly to your device's disk", toneColor: Theme.Colors.Tone.anxious),
+            Feature(icon: "xmark.icloud.fill", text: "Zero cloud databases - no accounts required", toneColor: Theme.Colors.Tone.condescending)
         ]
 
         var body: some View {
@@ -310,11 +310,11 @@ extension OnboardingScreen {
                     .foregroundStyle(Theme.Colors.Text.title)
 
                 VStack(alignment: .leading, spacing: .space12) {
-                    Text("Your messages never leave your pocket.")
+                    Text("Your Data is Safe With Us.")
                         .font(Theme.Typography.hugeTitle)
                         .foregroundStyle(Theme.Colors.Text.title)
 
-                    Text("This app runs on a local-first architecture. No account, no sign-up, no server-side profile of you.")
+                    Text("Everything runs on a local-first architecture - no accounts, no sign-up, no server-side profile of you.")
                         .font(Theme.Typography.bodyText)
                         .foregroundStyle(Theme.Colors.Text.muted)
                         .lineSpacing(4)

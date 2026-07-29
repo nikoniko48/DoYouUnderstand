@@ -52,6 +52,7 @@ extension ExplanationViewModel {
 
     struct Payload: Hashable, Codable {
         let originalMessage: String
+        let extractedText: String
         let tone: Tone
         let toneScore: Int
         let said: String
@@ -103,7 +104,9 @@ extension ExplanationViewModel {
     }
 
     private func applyPayload(_ payload: Payload) {
-        stateModel.originalMessage = payload.originalMessage
+        // The user may have submitted an image with no typed text - fall back
+        // to the AI's transcription so the UI never shows a blank message.
+        stateModel.originalMessage = payload.originalMessage.isEmpty ? payload.extractedText : payload.originalMessage
         stateModel.originalTone = .init(tone: payload.tone, score: payload.toneScore)
         stateModel.breakdown = .init(
             said: payload.said,

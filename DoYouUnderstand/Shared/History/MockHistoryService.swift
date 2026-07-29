@@ -48,6 +48,7 @@ extension MockHistoryService {
             payload: .explanation(
                 ExplanationViewModel.Payload(
                     originalMessage: "Per my last email, I clearly outlined the deliverables that were expected by EOD. I'm not sure why this is still unclear...",
+                    extractedText: "Per my last email, I clearly outlined the deliverables that were expected by EOD. I'm not sure why this is still unclear...",
                     tone: .passiveAggressive,
                     toneScore: 87,
                     said: "\"Per my last email, I clearly outlined the deliverables expected by EOD.\"",
@@ -63,6 +64,7 @@ extension MockHistoryService {
             payload: .reply(
                 ReplyViewModel.Payload(
                     originalMessage: "Just to clarify, we need that finalized by this evening or we might miss the window.",
+                    extractedText: "Just to clarify, we need that finalized by this evening or we might miss the window.",
                     tone: .overEager,
                     toneScore: 82,
                     toneQuote: "\"Just to clarify, we need that finalized by this evening or we might miss the window.\"",
@@ -89,6 +91,7 @@ extension MockHistoryService {
             payload: .explanation(
                 ExplanationViewModel.Payload(
                     originalMessage: "K.",
+                    extractedText: "K.",
                     tone: .condescending,
                     toneScore: 92,
                     said: "\"K.\"",
@@ -104,6 +107,7 @@ extension MockHistoryService {
             payload: .explanation(
                 ExplanationViewModel.Payload(
                     originalMessage: "Hey, just following up on this again... no pressure at all, just wanted to make sure you saw it? Let me know!",
+                    extractedText: "Hey, just following up on this again... no pressure at all, just wanted to make sure you saw it? Let me know!",
                     tone: .anxious,
                     toneScore: 88,
                     said: "\"Hey, just following up on this again... no pressure at all, just wanted to make sure you saw it? Let me know!\"",
@@ -119,6 +123,7 @@ extension MockHistoryService {
             payload: .explanation(
                 ExplanationViewModel.Payload(
                     originalMessage: "Oh wow, another mandatory sync that could have been a 2-line email. I am absolutely thrilled.",
+                    extractedText: "Oh wow, another mandatory sync that could have been a 2-line email. I am absolutely thrilled.",
                     tone: .sarcastic,
                     toneScore: 95,
                     said: "\"Oh wow, another mandatory sync that could have been a 2-line email. I am absolutely thrilled.\"",
@@ -134,6 +139,7 @@ extension MockHistoryService {
             payload: .reply(
                 ReplyViewModel.Payload(
                     originalMessage: "Let me explain this one more time so it's a bit easier for you to grasp.",
+                    extractedText: "Let me explain this one more time so it's a bit easier for you to grasp.",
                     tone: .condescending,
                     toneScore: 94,
                     toneQuote: "\"Let me explain this one more time so it's a bit easier for you to grasp.\"",
@@ -160,6 +166,7 @@ extension MockHistoryService {
             payload: .explanation(
                 ExplanationViewModel.Payload(
                     originalMessage: "I guess we can just do whatever you want. Don't worry about what I had planned.",
+                    extractedText: "I guess we can just do whatever you want. Don't worry about what I had planned.",
                     tone: .passiveAggressive,
                     toneScore: 81,
                     said: "\"I guess we can just do whatever you want. Don't worry about what I had planned.\"",

@@ -42,6 +42,7 @@ const THREAD_IMAGE_RULE_REPLY =
 const explainSchema = {
   type: "object",
   properties: {
+    extractedText: { type: "string" },
     tone: { type: "string", enum: TONES },
     toneScore: { type: "integer" },
     said: { type: "string" },
@@ -49,12 +50,13 @@ const explainSchema = {
     subtext: { type: "string" },
     eli5: { type: "string" },
   },
-  required: ["tone", "toneScore", "said", "meant", "subtext", "eli5"],
+  required: ["extractedText", "tone", "toneScore", "said", "meant", "subtext", "eli5"],
 };
 
 const replySchema = {
   type: "object",
   properties: {
+    extractedText: { type: "string" },
     tone: { type: "string", enum: TONES },
     toneScore: { type: "integer" },
     toneQuote: { type: "string" },
@@ -70,7 +72,7 @@ const replySchema = {
       },
     },
   },
-  required: ["tone", "toneScore", "toneQuote", "replies"],
+  required: ["extractedText", "tone", "toneScore", "toneQuote", "replies"],
 };
 
 const tweakSchema = {
@@ -81,20 +83,38 @@ const tweakSchema = {
   required: ["text"],
 };
 
+function messageBlock(text: string): string {
+  return text.trim().length > 0
+    ? `Message: """${text}"""`
+    : `The message was not typed as text - it is provided as an image below. Read the message directly ` +
+      `from the screenshot.`;
+}
+
+// Every mode that can take an image needs to hand back the plain-text content
+// of the message, since the caller may not have typed anything themselves
+// (and we don't want to re-upload the image just to reuse the text later).
+const EXTRACTED_TEXT_INSTRUCTION =
+  `Always populate "extractedText" with the core message content, exactly as a plain-text version of it: ` +
+  `if the message text was provided above, echo it back verbatim; if no text was provided and the message ` +
+  `came from an image instead, transcribe the core message text directly from the image (just the message ` +
+  `itself, not the whole thread/UI chrome around it).`;
+
 function buildExplainPrompt(text: string): string {
   return `You are analyzing a message someone received so they can understand its real tone and subtext.
-Message: """${text}"""
+${messageBlock(text)}
 
 Identify the single dominant tone (one of: ${TONES.join(", ")}), a confidence score 0-100 for that tone,
 what was literally said, what the sender actually meant, the unspoken subtext, and a one-sentence
 explain-like-I'm-5 summary.
+
+${EXTRACTED_TEXT_INSTRUCTION}
 
 ${THREAD_IMAGE_RULE_EXPLAIN}`;
 }
 
 function buildReplyPrompt(text: string, excludeTones: string[]): string {
   const base = `You are drafting reply options to a message someone received.
-Message: """${text}"""
+${messageBlock(text)}
 
 First identify the single dominant tone of the ORIGINAL message (one of: ${TONES.join(", ")}), a confidence
 score 0-100, and the exact quoted phrase from the original message that best reveals that tone.`;
@@ -105,7 +125,7 @@ score 0-100, and the exact quoted phrase from the original message that best rev
       `ones already shown) that would be interesting alternative ways to respond.`
     : `Then draft exactly 3 ready-to-send reply options: one Professional, one Assertive, one Friendly.`;
 
-  return `${base}\n${repliesInstruction}\n\n${THREAD_IMAGE_RULE_REPLY}`;
+  return `${base}\n${repliesInstruction}\n\n${EXTRACTED_TEXT_INSTRUCTION}\n\n${THREAD_IMAGE_RULE_REPLY}`;
 }
 
 function buildTweakPrompt(replyText: string, tone: string, instruction: string): string {
@@ -133,8 +153,15 @@ Deno.serve(async (req) => {
     if (mode !== "explain" && mode !== "reply" && mode !== "tweak") {
       throw new Error("mode must be 'explain', 'reply', or 'tweak'");
     }
-    if (!text || typeof text !== "string") {
-      throw new Error("text is required");
+
+    const messageText = typeof text === "string" ? text : "";
+    const imageList = (images ?? []) as string[];
+
+    if (mode === "tweak" && messageText.trim().length === 0) {
+      throw new Error("text is required for tweak mode");
+    }
+    if (mode !== "tweak" && messageText.trim().length === 0 && imageList.length === 0) {
+      throw new Error("Provide text or at least one image");
     }
 
     let promptText: string;
@@ -142,18 +169,18 @@ Deno.serve(async (req) => {
 
     switch (mode) {
       case "explain":
-        promptText = buildExplainPrompt(text);
+        promptText = buildExplainPrompt(messageText);
         schema = explainSchema;
         break;
       case "reply":
-        promptText = buildReplyPrompt(text, (excludeTones ?? []) as string[]);
+        promptText = buildReplyPrompt(messageText, (excludeTones ?? []) as string[]);
         schema = replySchema;
         break;
       case "tweak": {
         if (!tone || typeof tone !== "string" || !instruction || typeof instruction !== "string") {
           throw new Error("tone and instruction are required for tweak mode");
         }
-        promptText = buildTweakPrompt(text, tone, instruction);
+        promptText = buildTweakPrompt(messageText, tone, instruction);
         schema = tweakSchema;
         break;
       }
@@ -161,8 +188,8 @@ Deno.serve(async (req) => {
 
     const parts: Record<string, unknown>[] = [{ text: promptText }];
     if (mode !== "tweak") {
-      for (const base64 of (images ?? []) as string[]) {
-        parts.push({ inlineData: { mimeType: "image/jpeg", data: base64 } });
+      for (const base64 of imageList) {
+        parts.push({ inline_data: { mime_type: "image/jpeg", data: base64 } });
       }
     }
 

@@ -118,7 +118,9 @@ extension InputViewModel {
     
     private func analyse() {
         let text = stateModel.inputText
-        let images = stateModel.images.compactMap { $0.image.jpegData(compressionQuality: 0.7) }
+        let images = stateModel.images.compactMap {
+            $0.image.resized(maxDimension: 1024).jpegData(compressionQuality: 0.5)
+        }
         let type = stateModel.selectedType
 
         stateModel.loaderMessage = "Analyzing your message..."

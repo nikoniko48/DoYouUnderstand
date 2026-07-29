@@ -27,6 +27,7 @@ enum GeminiService {
 
         return ExplanationViewModel.Payload(
             originalMessage: text,
+            extractedText: decoded.extractedText,
             tone: tone,
             toneScore: decoded.toneScore,
             said: decoded.said,
@@ -59,6 +60,7 @@ enum GeminiService {
 
         return ReplyViewModel.Payload(
             originalMessage: text,
+            extractedText: decoded.extractedText,
             tone: tone,
             toneScore: decoded.toneScore,
             toneQuote: decoded.toneQuote,
@@ -133,6 +135,7 @@ extension GeminiService {
 extension GeminiService {
 
     private struct ExplainResponseBody: Decodable {
+        let extractedText: String
         let tone: String
         let toneScore: Int
         let said: String
@@ -147,6 +150,7 @@ extension GeminiService {
             let text: String
         }
 
+        let extractedText: String
         let tone: String
         let toneScore: Int
         let toneQuote: String

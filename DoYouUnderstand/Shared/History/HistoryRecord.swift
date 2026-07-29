@@ -29,10 +29,15 @@ extension HistoryRecord {
         }
     }
 
+    /// Falls back to the AI-extracted text when the user submitted an image
+    /// with no typed text of their own, so the Dashboard never shows a blank
+    /// preview for screenshot-only analyses.
     var snippet: String {
         switch payload {
-        case .explanation(let payload): return payload.originalMessage
-        case .reply(let payload): return payload.originalMessage
+        case .explanation(let payload):
+            return payload.originalMessage.isEmpty ? payload.extractedText : payload.originalMessage
+        case .reply(let payload):
+            return payload.originalMessage.isEmpty ? payload.extractedText : payload.originalMessage
         }
     }
 }

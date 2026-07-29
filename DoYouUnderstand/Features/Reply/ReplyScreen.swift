@@ -369,6 +369,38 @@ extension ReplyScreen {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .disabled(option.isRegenerating)
+
+                HStack(spacing: .space12) {
+                    Button {
+                        actions.onAdjustLength?(option.id, .shorten)
+                    } label: {
+                        Text("Shorten")
+                            .font(Theme.Typography.smallBody.weight(.bold))
+                            .foregroundStyle(Theme.Colors.Text.muted)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
+                            )
+                    }
+                    .disabled(option.isRegenerating)
+
+                    Button {
+                        actions.onAdjustLength?(option.id, .lengthen)
+                    } label: {
+                        Text("Lengthen")
+                            .font(Theme.Typography.smallBody.weight(.bold))
+                            .foregroundStyle(Theme.Colors.Text.muted)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
+                            )
+                    }
+                    .disabled(option.isRegenerating)
+                }
             }
             .padding(.space12)
             .background(Theme.Colors.Main.background)
