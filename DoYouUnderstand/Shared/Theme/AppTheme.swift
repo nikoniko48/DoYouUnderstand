@@ -40,16 +40,33 @@ enum Theme {
     }
     
     enum Typography {
-        static let hugeTitle = Font.system(size: 22, weight: .heavy)
-        static let screenTitle = Font.system(size: 18, weight: .bold)
-        static let primaryButton = Font.system(size: 17, weight: .heavy)
 
-        static let biggerText = Font.system(size: 14, weight: .bold)
-        static let bodyText = Font.system(size: 13, weight: .medium)
-        static let smallBody = Font.system(size: 12, weight: .regular)
+        /// Space Grotesk (variable font) - titles, headlines, big numbers, buttons.
+        static func spaceGrotesk(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+            Font.custom("SpaceGrotesk-Light", size: size).weight(weight)
+        }
 
-        static let badgeLabel = Font.system(size: 11, weight: .heavy)
-        static let tinyLabel = Font.system(size: 10, weight: .heavy)
+        /// Inter (variable font) - body copy, labels, and other supporting text.
+        static func inter(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+            Font.custom("Inter-Regular", size: size).weight(weight)
+        }
+
+        static let heroTitle = spaceGrotesk(size: 34, weight: .black)
+        static let hugeTitle = spaceGrotesk(size: 22, weight: .heavy)
+        static let screenTitle = spaceGrotesk(size: 18, weight: .bold)
+        static let primaryButton = spaceGrotesk(size: 17, weight: .heavy)
+
+        // Onboarding-only scale - the funnel wants noticeably bigger,
+        // punchier type than the rest of the app's denser screens.
+        static let onboardingTitle = spaceGrotesk(size: 24, weight: .heavy)
+        static let onboardingBody = inter(size: 16, weight: .medium)
+
+        static let biggerText = inter(size: 14, weight: .bold)
+        static let bodyText = inter(size: 13, weight: .medium)
+        static let smallBody = inter(size: 12, weight: .regular)
+
+        static let badgeLabel = inter(size: 11, weight: .heavy)
+        static let tinyLabel = inter(size: 10, weight: .heavy)
     }
 }
 

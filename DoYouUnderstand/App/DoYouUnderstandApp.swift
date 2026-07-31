@@ -9,6 +9,11 @@ import SwiftUI
 
 @main
 struct DoYouUnderstandApp: App {
+
+    init() {
+        AppFonts.registerAll()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

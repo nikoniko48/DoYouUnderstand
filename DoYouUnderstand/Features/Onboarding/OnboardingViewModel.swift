@@ -17,6 +17,7 @@ final class OnboardingViewModel: StateViewModelProtocol {
     private let output: (Output) -> Void
     private var useMocks: Bool
     private var processingTask: Task<Void, Never>?
+    private var autoAdvanceTask: Task<Void, Never>?
 
     init(useMocks: Bool = false, output: @escaping (Output) -> Void) {
         self.useMocks = useMocks
@@ -41,22 +42,36 @@ extension OnboardingViewModel {
 extension OnboardingViewModel {
 
     struct Actions {
+        var onNameChanged: ((String) -> Void)?
+        var onAgeChanged: ((Double) -> Void)?
+        var onSelectTheme: ((AppThemeChoice) -> Void)?
+        var onSelectTonePalette: ((TonePaletteChoice) -> Void)?
         var onSelectTriggerMessage: ((StateModel.TriggerMessage) -> Void)?
-        var onSelectCopingStyle: ((StateModel.CopingStyle) -> Void)?
         var onSelectPlan: ((StateModel.PricingPlan) -> Void)?
         var onNext: (() -> Void)?
-        var onSwipeBack: (() -> Void)?
         var onFinish: (() -> Void)?
     }
 
     private func setActions() {
 
-        actions.onSelectTriggerMessage = { [weak self] message in
-            self?.selectTriggerMessage(message)
+        actions.onNameChanged = { [weak self] name in
+            self?.stateModel.name = name
         }
 
-        actions.onSelectCopingStyle = { [weak self] style in
-            self?.selectCopingStyle(style)
+        actions.onAgeChanged = { [weak self] age in
+            self?.stateModel.age = age
+        }
+
+        actions.onSelectTheme = { [weak self] theme in
+            self?.selectTheme(theme)
+        }
+
+        actions.onSelectTonePalette = { [weak self] palette in
+            self?.selectTonePalette(palette)
+        }
+
+        actions.onSelectTriggerMessage = { [weak self] message in
+            self?.selectTriggerMessage(message)
         }
 
         actions.onSelectPlan = { [weak self] plan in
@@ -65,10 +80,6 @@ extension OnboardingViewModel {
 
         actions.onNext = { [weak self] in
             self?.advance()
-        }
-
-        actions.onSwipeBack = { [weak self] in
-            self?.retreat()
         }
 
         actions.onFinish = { [weak self] in
@@ -81,16 +92,27 @@ extension OnboardingViewModel {
 
 extension OnboardingViewModel {
 
+    private func selectTheme(_ theme: AppThemeChoice) {
+        // No auto-advance here - the theme step also offers a tone-palette
+        // pick below it now, so the user needs a manual Continue.
+        withAnimation(.easeInOut(duration: 0.2)) {
+            stateModel.selectedTheme = theme
+        }
+        UserDefaults.standard.set(theme.rawValue, forKey: "selectedAppTheme")
+    }
+
+    private func selectTonePalette(_ palette: TonePaletteChoice) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            stateModel.selectedTonePalette = palette
+        }
+        UserDefaults.standard.set(palette.rawValue, forKey: "selectedTonePalette")
+    }
+
     private func selectTriggerMessage(_ message: StateModel.TriggerMessage) {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             stateModel.selectedTriggerMessage = message
         }
-    }
-
-    private func selectCopingStyle(_ style: StateModel.CopingStyle) {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            stateModel.selectedCopingStyle = style
-        }
+        autoAdvanceAfterSelection()
     }
 
     private func selectPlan(_ plan: StateModel.PricingPlan) {
@@ -101,7 +123,6 @@ extension OnboardingViewModel {
 
     private func advance() {
         guard stateModel.currentStep < stateModel.totalSteps - 1 else { return }
-        stateModel.direction = .forward
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             stateModel.currentStep += 1
         }
@@ -110,18 +131,21 @@ extension OnboardingViewModel {
         }
     }
 
-    private func retreat() {
-        guard stateModel.currentStep > 0, stateModel.canSwipeBack else { return }
-        cancelProcessing()
-        stateModel.direction = .backward
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            stateModel.currentStep -= 1
-        }
-    }
-
     private func finish() {
         // TODO: Persist selected onboarding answers (Supabase) once backend is wired up.
         output(.finishOnboarding)
+    }
+
+    /// The trigger-message step advances on its own shortly after a tap, so
+    /// the user has a moment to actually read the selected bubble before the
+    /// slide transition kicks in.
+    private func autoAdvanceAfterSelection() {
+        autoAdvanceTask?.cancel()
+        autoAdvanceTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            guard !Task.isCancelled else { return }
+            self?.advance()
+        }
     }
 }
 
@@ -152,14 +176,8 @@ extension OnboardingViewModel {
     private func finishProcessing() {
         processingTask = nil
         guard stateModel.isProcessingStep else { return }
-        stateModel.direction = .forward
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             stateModel.currentStep += 1
         }
-    }
-
-    private func cancelProcessing() {
-        processingTask?.cancel()
-        processingTask = nil
     }
 }

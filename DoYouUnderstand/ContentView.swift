@@ -7,9 +7,15 @@
 
 import SwiftUI
 
+#if DEBUG
+/// Flip to `true` to always show onboarding on launch, regardless of `hasSeenOnboarding`.
+private let debugAlwaysShowOnboarding = true
+#endif
+
 struct ContentView: View {
     @State private var router = NavigationManager()
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
+    @AppStorage("selectedAppTheme") private var selectedThemeRaw: String = AppThemeChoice.light.rawValue
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -47,6 +53,7 @@ struct ContentView: View {
                 }
             }
         }
+        .preferredColorScheme(AppThemeChoice(rawValue: selectedThemeRaw)?.colorScheme)
     }
 }
 
@@ -54,15 +61,24 @@ struct ContentView: View {
 
 extension ContentView {
 
+    private var shouldShowOnboarding: Bool {
+#if DEBUG
+        if debugAlwaysShowOnboarding {
+            return true
+        }
+#endif
+        return !hasSeenOnboarding
+    }
+
     @ViewBuilder
     private var rootScreen: some View {
-        if hasSeenOnboarding {
-            DashboardScreen { output in
-                router.handle(.dashboard(output))
-            }
-        } else {
+        if shouldShowOnboarding {
             OnboardingScreen { output in
                 handleOnboarding(output)
+            }
+        } else {
+            DashboardScreen { output in
+                router.handle(.dashboard(output))
             }
         }
     }

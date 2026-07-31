@@ -12,33 +12,41 @@ extension OnboardingViewModel {
     @Observable
     final class StateModel: StateModelProtocol {
         var currentStep: Int
-        var direction: StepDirection
+        var name: String
+        var age: Double
+        var selectedTheme: AppThemeChoice?
+        var selectedTonePalette: TonePaletteChoice?
         var selectedTriggerMessage: TriggerMessage?
-        var selectedCopingStyle: CopingStyle?
         var processingMessageIndex: Int
         var selectedPlan: PricingPlan
 
         let totalSteps: Int = Step.allCases.count
-        let progressStepCount: Int = 3
+        let progressStepCount: Int = Step.allCases.count - 1
 
         init(
             currentStep: Int = 0,
-            direction: StepDirection = .forward,
+            name: String = "",
+            age: Double = 25,
+            selectedTheme: AppThemeChoice? = nil,
+            selectedTonePalette: TonePaletteChoice? = nil,
             selectedTriggerMessage: TriggerMessage? = nil,
-            selectedCopingStyle: CopingStyle? = nil,
             processingMessageIndex: Int = 0,
             selectedPlan: PricingPlan = .annual
         ) {
             self.currentStep = currentStep
-            self.direction = direction
+            self.name = name
+            self.age = age
+            self.selectedTheme = selectedTheme
+            self.selectedTonePalette = selectedTonePalette
             self.selectedTriggerMessage = selectedTriggerMessage
-            self.selectedCopingStyle = selectedCopingStyle
             self.processingMessageIndex = processingMessageIndex
             self.selectedPlan = selectedPlan
         }
 
+        static let ageRange: ClosedRange<Double> = 10...100
+
         var step: Step {
-            Step(rawValue: currentStep) ?? .triggerMessage
+            Step(rawValue: currentStep) ?? .greeting
         }
 
         var isProcessingStep: Bool {
@@ -49,28 +57,29 @@ extension OnboardingViewModel {
             step == .finisher
         }
 
-        /// The thin progress bar + "STEP X OF Y" label only make sense for the
-        /// interactive quiz steps - the processing, privacy, and paywall
-        /// screens that follow all hide it.
+        /// The progress bar + "STEP X OF Y" label only make sense once the
+        /// funnel actually starts - the greeting screen hides it.
         var showsProgressHeader: Bool {
-            step == .triggerMessage || step == .copingStyle || step == .processing
-        }
-
-        var canSwipeBack: Bool {
-            step == .triggerMessage || step == .copingStyle
+            step != .greeting
         }
 
         var displayStepNumber: Int {
-            min(currentStep + 1, progressStepCount)
+            currentStep
+        }
+
+        var isNameValid: Bool {
+            !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
 
         var isContinueEnabled: Bool {
             switch step {
-            case .triggerMessage:
-                return selectedTriggerMessage != nil
-            case .copingStyle:
-                return selectedCopingStyle != nil
-            case .processing, .privacy, .finisher:
+            case .greeting, .age, .intro, .stats, .processing, .privacy, .finisher:
+                return true
+            case .name:
+                return isNameValid
+            case .theme:
+                return selectedTheme != nil
+            case .triggerMessage, .tactileHold:
                 return true
             }
         }
@@ -88,11 +97,16 @@ extension OnboardingViewModel {
 
         // 6 ticks x 0.5s = exactly 3.0 seconds.
         static let processingTickCount = 6
-    }
 
-    enum StepDirection {
-        case forward
-        case backward
+        static let statsHeadline = "We've got great news for you."
+        // The 31% figure is real (Viber's "21st Century Messaging Etiquette"
+        // survey, 2,400 US/UK respondents via Pollfish, 2018). The 92% is our
+        // own product claim about app users, not part of that survey.
+        static let statsBody = "31% of people say texting is a daily source of stress. Users like you see a 92% reduction in that anxiety within the first two weeks."
+        static let statsBeforePercent: Double = 31
+        static let statsAfterPercent: Double = 92
+        static let statsBeforeLabel = "People Today"
+        static let statsAfterLabel = "With Us"
     }
 }
 
@@ -101,11 +115,17 @@ extension OnboardingViewModel {
 extension OnboardingViewModel.StateModel {
 
     enum Step: Int, CaseIterable {
-        case triggerMessage = 0
-        case copingStyle = 1
-        case processing = 2
-        case privacy = 3
-        case finisher = 4
+        case greeting = 0
+        case name = 1
+        case age = 2
+        case theme = 3
+        case intro = 4
+        case triggerMessage = 5
+        case processing = 6
+        case stats = 7
+        case tactileHold = 8
+        case privacy = 9
+        case finisher = 10
     }
 
     enum PricingPlan: String, CaseIterable, Identifiable {
@@ -144,66 +164,41 @@ extension OnboardingViewModel.StateModel {
         }
     }
 
-    enum TriggerMessage: String, CaseIterable, Identifiable {
-        case coldFriendText = "The 'K.' text from a friend"
-        case bossEmail = "The 'Per my last email' from a boss"
-        case familyGuiltTrip = "The guilt-trip text from family"
+    enum TriggerMessage: CaseIterable, Identifiable {
+        case friendAnnoying
+        case bossPassiveAggressive
+        case intrusiveParent
+        case strongPartner
 
-        var id: String { rawValue }
+        var id: Self { self }
 
-        var icon: String {
+        /// Who the example message below is "from" - shown as a small label
+        /// above the chat bubble.
+        var senderLabel: String {
             switch self {
-            case .coldFriendText: return "message.fill"
-            case .bossEmail: return "briefcase.fill"
-            case .familyGuiltTrip: return "house.fill"
+            case .friendAnnoying: return "FROM A FRIEND"
+            case .bossPassiveAggressive: return "FROM YOUR BOSS"
+            case .intrusiveParent: return "FROM A PARENT"
+            case .strongPartner: return "FROM A PARTNER"
             }
         }
 
-        var subtitle: String {
+        /// The actual example message shown inside the chat bubble.
+        var exampleMessage: String {
             switch self {
-            case .coldFriendText: return "Short, cold, and terrifying"
-            case .bossEmail: return "Corporate passive-aggression"
-            case .familyGuiltTrip: return "Emotional manipulation at its finest"
-            }
-        }
-
-        var toneColor: Color {
-            switch self {
-            case .coldFriendText: return Theme.Colors.Tone.passiveAggressive
-            case .bossEmail: return Theme.Colors.Tone.condescending
-            case .familyGuiltTrip: return Theme.Colors.Tone.anxious
-            }
-        }
-    }
-
-    enum CopingStyle: String, CaseIterable, Identifiable {
-        case stare = "Stare at it for an hour"
-        case vent = "Vent to a coworker"
-        case draftRisky = "Draft a risky emotional reply"
-
-        var id: String { rawValue }
-
-        var icon: String {
-            switch self {
-            case .stare: return "clock.fill"
-            case .vent: return "person.2.fill"
-            case .draftRisky: return "flame.fill"
-            }
-        }
-
-        var subtitle: String {
-            switch self {
-            case .stare: return "Overthinking every single word"
-            case .vent: return "Sending screenshots for backup"
-            case .draftRisky: return "Typing what you *really* want to say"
+            case .friendAnnoying: return "omg you HAVE to come tonight, everyone's asking about you 👀"
+            case .bossPassiveAggressive: return "Just following up on this again, per my last email 🙂"
+            case .intrusiveParent: return "Call me back. It's important. Where even are you these days?"
+            case .strongPartner: return "We need to talk. Tonight. Don't be late."
             }
         }
 
         var toneColor: Color {
             switch self {
-            case .stare: return Theme.Colors.Tone.anxious
-            case .vent: return Theme.Colors.Tone.overEager
-            case .draftRisky: return Theme.Colors.Tone.sarcastic
+            case .friendAnnoying: return Theme.Colors.Tone.overEager
+            case .bossPassiveAggressive: return Theme.Colors.Tone.passiveAggressive
+            case .intrusiveParent: return Theme.Colors.Tone.anxious
+            case .strongPartner: return Theme.Colors.Tone.sarcastic
             }
         }
     }
