@@ -16,11 +16,18 @@ enum Tone: String, Codable, CaseIterable {
     case professional = "Professional"
     case assertive = "Assertive"
     case friendly = "Friendly"
+    case playful = "Playful"
+    case apologetic = "Apologetic"
+    case empathetic = "Empathetic"
+    case blunt = "Blunt"
+    case flirty = "Flirty"
+    case diplomatic = "Diplomatic"
+    case dismissive = "Dismissive"
 }
 
 // MARK: - UI Mapping
 extension Tone {
-    
+
     var color: Color {
         switch self {
         case .anxious: return Theme.Colors.Tone.anxious
@@ -28,12 +35,19 @@ extension Tone {
         case .overEager: return Theme.Colors.Tone.overEager
         case .passiveAggressive: return Theme.Colors.Tone.passiveAggressive
         case .sarcastic: return Theme.Colors.Tone.sarcastic
-        case .professional: return Theme.Colors.Main.primary
-        case .assertive: return Theme.Colors.Tone.anxious // TODO: add new color
-        case .friendly: return Theme.Colors.Main.success
+        case .professional: return Theme.Colors.Tone.professional
+        case .assertive: return Theme.Colors.Tone.assertive
+        case .friendly: return Theme.Colors.Tone.friendly
+        case .playful: return Theme.Colors.Tone.playful
+        case .apologetic: return Theme.Colors.Tone.apologetic
+        case .empathetic: return Theme.Colors.Tone.empathetic
+        case .blunt: return Theme.Colors.Tone.blunt
+        case .flirty: return Theme.Colors.Tone.flirty
+        case .diplomatic: return Theme.Colors.Tone.diplomatic
+        case .dismissive: return Theme.Colors.Tone.dismissive
         }
     }
-    
+
     var emoji: String {
         switch self {
         case .anxious: return "😰"
@@ -44,9 +58,16 @@ extension Tone {
         case .professional: return "💼"
         case .assertive: return "⚡️"
         case .friendly: return "😊"
+        case .playful: return "😄"
+        case .apologetic: return "🙏"
+        case .empathetic: return "🤗"
+        case .blunt: return "🎯"
+        case .flirty: return "😉"
+        case .diplomatic: return "🤝"
+        case .dismissive: return "😑"
         }
     }
-    
+
     var replyTitle: String {
         switch self {
         case .anxious: return "Cautious & Reassuring"
@@ -57,6 +78,13 @@ extension Tone {
         case .professional: return "Professional & Polite"
         case .assertive: return "Assertive & Direct"
         case .friendly: return "Casual & Friendly"
+        case .playful: return "Playful & Witty"
+        case .apologetic: return "Apologetic & Humble"
+        case .empathetic: return "Warm & Empathetic"
+        case .blunt: return "Blunt & To-the-Point"
+        case .flirty: return "Flirty & Charming"
+        case .diplomatic: return "Diplomatic & Balanced"
+        case .dismissive: return "Cold & Dismissive"
         }
     }
 
@@ -71,6 +99,13 @@ extension Tone {
         case .professional: return "Lighter & Friendly"
         case .assertive: return "Softer & Diplomatic"
         case .friendly: return "More Reserved"
+        case .playful: return "More Serious"
+        case .apologetic: return "Less Apologetic"
+        case .empathetic: return "More Matter-of-Fact"
+        case .blunt: return "Softer & Gentler"
+        case .flirty: return "Less Flirty"
+        case .diplomatic: return "More Opinionated"
+        case .dismissive: return "Warmer & Engaged"
         }
     }
 
@@ -85,6 +120,13 @@ extension Tone {
         case .professional: return "Ultra Formal"
         case .assertive: return "Extremely Firm"
         case .friendly: return "Extra Warm & Casual"
+        case .playful: return "Extra Playful"
+        case .apologetic: return "Deeply Remorseful"
+        case .empathetic: return "Extra Compassionate"
+        case .blunt: return "Even Blunter"
+        case .flirty: return "Extra Flirty"
+        case .diplomatic: return "Ultra Neutral"
+        case .dismissive: return "Even Colder"
         }
     }
 }

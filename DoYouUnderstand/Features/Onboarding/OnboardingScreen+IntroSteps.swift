@@ -11,6 +11,8 @@ extension OnboardingScreen {
 
     struct GreetingStepView: View {
 
+        let actions: OnboardingViewModel.Actions
+
         private static let points: [Feature] = [
             Feature(icon: "magnifyingglass", text: "Decode what any message really means", toneColor: Theme.Colors.Tone.overEager),
             Feature(icon: "bolt.fill", text: "Get the perfect reply in seconds", toneColor: Theme.Colors.Tone.sarcastic),
@@ -42,6 +44,19 @@ extension OnboardingScreen {
                 }
 
                 Spacer(minLength: .space0)
+
+#if DEBUG
+                Button {
+                    actions.onFinish?()
+                } label: {
+                    Text("Skip Onboarding (Debug)")
+                        .font(Theme.Typography.smallBody)
+                        .foregroundStyle(Theme.Colors.Text.muted)
+                        .underline()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .padding(.bottom, .space8)
+#endif
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

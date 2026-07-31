@@ -87,4 +87,17 @@ final class OnboardingFlowSmokeTest: XCTestCase {
         let dashboardTitle = app.staticTexts["DO YOU\nUNDERSTAND?!"]
         XCTAssertTrue(dashboardTitle.waitForExistence(timeout: 2))
     }
+
+    @MainActor
+    func testSkipOnboardingDebugButton() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let skipButton = app.buttons["Skip Onboarding (Debug)"]
+        XCTAssertTrue(skipButton.waitForExistence(timeout: 2))
+        skipButton.tap()
+
+        let dashboardTitle = app.staticTexts["DO YOU\nUNDERSTAND?!"]
+        XCTAssertTrue(dashboardTitle.waitForExistence(timeout: 2))
+    }
 }

@@ -80,6 +80,14 @@ extension MockHistoryService {
                         .init(
                             tone: .friendly,
                             text: "Got it! I'm wrapping it up right now and will send it your way shortly so we don't miss the window."
+                        ),
+                        .init(
+                            tone: .diplomatic,
+                            text: "Thanks for the heads up. I'll make sure it's finalized in time for the window - let me know if anything changes on your end."
+                        ),
+                        .init(
+                            tone: .empathetic,
+                            text: "No worries, I know this one's time-sensitive. I'm on it and will have it wrapped up well before the deadline."
                         )
                     ]
                 )
@@ -155,6 +163,14 @@ extension MockHistoryService {
                         .init(
                             tone: .friendly,
                             text: "Thanks for breaking it down! I've got a good handle on it now and will get it sorted."
+                        ),
+                        .init(
+                            tone: .blunt,
+                            text: "I understood it the first time. Moving on."
+                        ),
+                        .init(
+                            tone: .diplomatic,
+                            text: "I appreciate you double-checking. I've got a solid handle on the requirements and I'm already moving forward with them."
                         )
                     ]
                 )

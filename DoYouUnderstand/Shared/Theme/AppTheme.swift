@@ -36,6 +36,16 @@ enum Theme {
             static let overEager = Color("ToneOverEager")
             static let passiveAggressive = Color("TonePassiveAggressive")
             static let sarcastic = Color("ToneSarcastic")
+            static let professional = Color("ToneProfessional")
+            static let assertive = Color("ToneAssertive")
+            static let friendly = Color("ToneFriendly")
+            static let playful = Color("TonePlayful")
+            static let apologetic = Color("ToneApologetic")
+            static let empathetic = Color("ToneEmpathetic")
+            static let blunt = Color("ToneBlunt")
+            static let flirty = Color("ToneFlirty")
+            static let diplomatic = Color("ToneDiplomatic")
+            static let dismissive = Color("ToneDismissive")
         }
     }
     

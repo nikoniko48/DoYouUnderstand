@@ -17,6 +17,12 @@ struct ContentView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @AppStorage("selectedAppTheme") private var selectedThemeRaw: String = AppThemeChoice.light.rawValue
 
+    // Decided once per launch (honoring the debug override below), then
+    // driven purely by app state afterward - so finishing onboarding always
+    // moves forward into the app, even on a debug build that always starts
+    // on onboarding.
+    @State private var isShowingOnboarding = ContentView.initialShouldShowOnboarding()
+
     var body: some View {
         NavigationStack(path: $router.path) {
             rootScreen
@@ -61,18 +67,18 @@ struct ContentView: View {
 
 extension ContentView {
 
-    private var shouldShowOnboarding: Bool {
+    private static func initialShouldShowOnboarding() -> Bool {
 #if DEBUG
         if debugAlwaysShowOnboarding {
             return true
         }
 #endif
-        return !hasSeenOnboarding
+        return !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
     }
 
     @ViewBuilder
     private var rootScreen: some View {
-        if shouldShowOnboarding {
+        if isShowingOnboarding {
             OnboardingScreen { output in
                 handleOnboarding(output)
             }
@@ -86,7 +92,10 @@ extension ContentView {
     private func handleOnboarding(_ output: OnboardingViewModel.Output) {
         switch output {
         case .finishOnboarding:
+            // No payments yet - choosing a plan just completes onboarding
+            // and drops the user into the app.
             hasSeenOnboarding = true
+            isShowingOnboarding = false
             router.popToRoot()
         }
     }

@@ -112,7 +112,7 @@ extension OnboardingScreen.ContentView {
     private var stepContent: some View {
         switch stateModel.step {
         case .greeting:
-            OnboardingScreen.GreetingStepView()
+            OnboardingScreen.GreetingStepView(actions: actions)
         case .name:
             OnboardingScreen.NameStepView(stateModel: stateModel, actions: actions)
         case .age:

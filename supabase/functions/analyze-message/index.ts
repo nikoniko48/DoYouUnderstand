@@ -19,6 +19,13 @@ const TONES = [
   "Professional",
   "Assertive",
   "Friendly",
+  "Playful",
+  "Apologetic",
+  "Empathetic",
+  "Blunt",
+  "Flirty",
+  "Diplomatic",
+  "Dismissive",
 ];
 
 const corsHeaders = {
@@ -120,10 +127,11 @@ First identify the single dominant tone of the ORIGINAL message (one of: ${TONES
 score 0-100, and the exact quoted phrase from the original message that best reveals that tone.`;
 
   const repliesInstruction = excludeTones.length > 0
-    ? `Then draft exactly 3 NEW ready-to-send reply options, each in a DIFFERENT tone than these already-shown ` +
-      `tones: ${excludeTones.join(", ")}. Pick 3 varied, distinct tones from: ${TONES.join(", ")} (excluding the ` +
+    ? `Then draft exactly 5 NEW ready-to-send reply options, each in a DIFFERENT tone than these already-shown ` +
+      `tones: ${excludeTones.join(", ")}. Pick 5 varied, distinct tones from: ${TONES.join(", ")} (excluding the ` +
       `ones already shown) that would be interesting alternative ways to respond.`
-    : `Then draft exactly 3 ready-to-send reply options: one Professional, one Assertive, one Friendly.`;
+    : `Then draft exactly 5 ready-to-send reply options: one Professional, one Assertive, one Friendly, one ` +
+      `Diplomatic, and one Empathetic.`;
 
   return `${base}\n${repliesInstruction}\n\n${EXTRACTED_TEXT_INSTRUCTION}\n\n${THREAD_IMAGE_RULE_REPLY}`;
 }
