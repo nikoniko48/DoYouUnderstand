@@ -69,20 +69,21 @@ extension ExplanationScreen {
                                     Text("TONE ANALYSIS")
                                         .font(Typography.badgeLabel)
                                         .foregroundStyle(Colors.Text.muted)
-                                    
+
                                     Text("Here's the truth")
                                         .font(Typography.screenTitle)
                                         .foregroundStyle(Colors.Text.title)
                                 }
                                 Spacer()
                             }
-                            
+                            .onboardingReveal(delay: 0)
+
                             // MARK: - Original Message Card
                             VStack(alignment: .leading, spacing: .space12) {
                                 Text("ORIGINAL MESSAGE")
                                     .font(Typography.badgeLabel)
                                     .foregroundStyle(Colors.Text.muted)
-                                
+
                                 Text(stateModel.originalMessage)
                                     .font(Typography.bodyText)
                                     .foregroundStyle(Colors.Text.highlight)
@@ -96,7 +97,8 @@ extension ExplanationScreen {
                                 RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
                                     .stroke(Colors.Main.borderSubtle, lineWidth: 1)
                             )
-                            
+                            .onboardingReveal(delay: 0.06)
+
                             // MARK: - Tone Progress Bar
                             if let toneAnalysis = stateModel.originalTone {
                                 HStack(spacing: .space12) {
@@ -108,7 +110,7 @@ extension ExplanationScreen {
                                         .background(toneAnalysis.tone.color.opacity(0.15))
                                         .clipShape(Capsule())
                                         .overlay(Capsule().stroke(toneAnalysis.tone.color.opacity(0.4), lineWidth: 1))
-                                    
+
                                     GeometryReader { geo in
                                         Capsule()
                                             .fill(Colors.Main.borderSubtle)
@@ -119,34 +121,48 @@ extension ExplanationScreen {
                                             }
                                     }
                                     .frame(height: 6)
-                                    
+
                                     Text("\(toneAnalysis.score)%")
                                         .font(Typography.badgeLabel)
                                         .foregroundStyle(toneAnalysis.tone.color)
                                 }
+                                .onboardingReveal(delay: 0.1)
                             }
-                            
+
                             // MARK: - Dynamic Breakdown Content
                             if let breakdown = stateModel.breakdown {
                                 if stateModel.interactionStep == 0 {
                                     // Default Analysis Tiles
                                     VStack(spacing: .space16) {
-                                        BreakdownTile(title: "WHAT THEY SAID", content: breakdown.said)
-                                        BreakdownTile(title: "WHAT THEY ACTUALLY MEANT", content: breakdown.meant)
-                                        BreakdownTile(title: "SUBTEXT", content: breakdown.subtext)
+                                        BreakdownTile(icon: "quote.opening", title: "WHAT THEY SAID", content: breakdown.said)
+                                            .onboardingReveal(delay: 0.14)
+                                        BreakdownTile(icon: "brain.head.profile", title: "WHAT THEY ACTUALLY MEANT", content: breakdown.meant)
+                                            .onboardingReveal(delay: 0.18)
+                                        BreakdownTile(icon: "eye.fill", title: "SUBTEXT", content: breakdown.subtext)
+                                            .onboardingReveal(delay: 0.22)
+                                        if let toneAnalysis = stateModel.originalTone {
+                                            BreakdownTile(
+                                                icon: "info.circle.fill",
+                                                iconTint: toneAnalysis.tone.color,
+                                                title: "WHAT DOES \(toneAnalysis.tone.rawValue.uppercased()) MEAN?",
+                                                content: toneAnalysis.tone.definition
+                                            )
+                                            .onboardingReveal(delay: 0.26)
+                                        }
                                     }
                                     .transition(.asymmetric(insertion: .move(edge: .leading), removal: .scale).combined(with: .opacity))
                                 } else {
-                                    // ELI5 Colorful Tile
+                                    // Plain-English Colorful Tile
                                     VStack(alignment: .leading, spacing: .space12) {
-                                        HStack {
-                                            Text("🍼")
-                                                .font(.system(size: 24))
-                                            Text("EXPLAINED LIKE YOU'RE 5")
+                                        HStack(spacing: .space8) {
+                                            Image(systemName: "lightbulb.fill")
+                                                .font(.system(size: 20))
+                                                .foregroundStyle(Colors.Main.primary)
+                                            Text("Too Long; Didn't Read")
                                                 .font(Typography.screenTitle)
                                                 .foregroundStyle(Colors.Main.primary)
                                         }
-                                        
+
                                         Text(breakdown.eli5)
                                             .font(Typography.biggerText)
                                             .foregroundStyle(Colors.Text.title)
@@ -163,7 +179,7 @@ extension ExplanationScreen {
                                     .transition(.asymmetric(insertion: .scale, removal: .opacity).combined(with: .opacity))
                                 }
                             }
-                            
+
                             Spacer(minLength: 120) // Give space for the bottom button area
                         }
                         .padding(.horizontal, StaticData.Layout.screenPadding)
@@ -176,7 +192,7 @@ extension ExplanationScreen {
                         
                         // Prompt text automatically slides in from the left on view load
                         if stateModel.interactionStep == 0 && showPrompt {
-                            Text("Still confused? Let's dumb it down.")
+                            Text("Still confused? Let's cut to the chase.")
                                 .font(Typography.smallBody.weight(.bold))
                                 .foregroundStyle(Colors.Text.muted)
                                 .transition(.asymmetric(insertion: .move(edge: .leading), removal: .opacity).combined(with: .opacity))
@@ -187,7 +203,7 @@ extension ExplanationScreen {
                         } label: {
                             Text(stateModel.interactionStep == 0 ? "YEA!" : "GOT IT!")
                                 .font(Typography.primaryButton)
-                                .foregroundStyle(.black)
+                                .foregroundStyle(Colors.Main.accent.contrastingForeground)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 18)
                                 .background(Colors.Main.accent)
@@ -195,11 +211,20 @@ extension ExplanationScreen {
                         }
                     }
                     .padding(.horizontal, StaticData.Layout.screenPadding)
+                    .padding(.top, .space12)
                     .padding(.bottom, .space24)
                     .background(
-                        Colors.Main.background
-                            .padding(.top, -40)
-                            .ignoresSafeArea()
+                        // A short fade rather than a large opaque block
+                        // extending arbitrarily far above this footer's own
+                        // bounds - that used to blot out most of the last
+                        // tile above it. This floats over just enough to
+                        // read clearly against whatever scrolls underneath.
+                        LinearGradient(
+                            colors: [Colors.Main.background.opacity(0), Colors.Main.background],
+                            startPoint: .top,
+                            endPoint: .init(x: 0.5, y: 0.35)
+                        )
+                        .ignoresSafeArea()
                     )
                 }
                 .onAppear {
@@ -219,19 +244,30 @@ extension ExplanationScreen {
 extension ExplanationScreen {
     
     struct BreakdownTile: View {
+        let icon: String
+        var iconTint: Color = Theme.Colors.Main.accent
         let title: String
         let content: String
-        
+
         var body: some View {
-            VStack(alignment: .leading, spacing: .space8) {
-                Text(title)
-                    .font(Theme.Typography.badgeLabel)
-                    .foregroundStyle(Theme.Colors.Text.muted)
-                
-                Text(content)
+            HStack(alignment: .top, spacing: .space12) {
+                Image(systemName: icon)
                     .font(Theme.Typography.bodyText)
-                    .foregroundStyle(Theme.Colors.Text.title)
-                    .lineSpacing(4)
+                    .foregroundStyle(iconTint.contrastingForeground)
+                    .frame(width: 32, height: 32)
+                    .background(iconTint)
+                    .clipShape(RoundedRectangle(cornerRadius: .space8))
+
+                VStack(alignment: .leading, spacing: .space8) {
+                    Text(title)
+                        .font(Theme.Typography.badgeLabel)
+                        .foregroundStyle(Theme.Colors.Text.muted)
+
+                    Text(content)
+                        .font(Theme.Typography.bodyText)
+                        .foregroundStyle(Theme.Colors.Text.title)
+                        .lineSpacing(4)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.space16)

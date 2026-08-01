@@ -129,4 +129,26 @@ extension Tone {
         case .dismissive: return "Even Colder"
         }
     }
+
+    /// One-line explanation of what this tone generally signals in a
+    /// message - shown on the Explanation screen's tone-definition tile.
+    var definition: String {
+        switch self {
+        case .anxious: return "The sender sounds worried or on edge, often over-explaining or seeking reassurance."
+        case .condescending: return "The sender is talking down to you, implying they know better."
+        case .overEager: return "The sender is overly enthusiastic, possibly masking pressure to please."
+        case .passiveAggressive: return "The sender is indirectly expressing frustration instead of stating it outright."
+        case .sarcastic: return "The sender means the opposite of what's literally said, often to mock or vent."
+        case .professional: return "The sender is keeping things formal and businesslike, with no strong emotion."
+        case .assertive: return "The sender is stating their position directly and confidently, no hedging."
+        case .friendly: return "The sender is warm and casual, aiming to keep things comfortable."
+        case .playful: return "The sender is joking around, not meant to be taken too seriously."
+        case .apologetic: return "The sender feels at fault and is trying to smooth things over."
+        case .empathetic: return "The sender is prioritizing your feelings and trying to connect emotionally."
+        case .blunt: return "The sender is stating things plainly, with little concern for softening it."
+        case .flirty: return "The sender is signaling romantic or playful interest."
+        case .diplomatic: return "The sender is carefully balancing honesty with not causing offense."
+        case .dismissive: return "The sender seems disengaged or uninterested in continuing the conversation."
+        }
+    }
 }

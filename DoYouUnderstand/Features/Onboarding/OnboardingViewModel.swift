@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import RevenueCat
 
 @Observable
 final class OnboardingViewModel: StateViewModelProtocol {
@@ -15,11 +16,20 @@ final class OnboardingViewModel: StateViewModelProtocol {
 
     private(set) var actions: Actions = .init()
     private let output: (Output) -> Void
+    private let subscriptionManager: SubscriptionManager
+    private let themeManager: ThemeManager
     private var useMocks: Bool
     private var processingTask: Task<Void, Never>?
     private var autoAdvanceTask: Task<Void, Never>?
 
-    init(useMocks: Bool = false, output: @escaping (Output) -> Void) {
+    init(
+        subscriptionManager: SubscriptionManager = .shared,
+        themeManager: ThemeManager = .shared,
+        useMocks: Bool = false,
+        output: @escaping (Output) -> Void
+    ) {
+        self.subscriptionManager = subscriptionManager
+        self.themeManager = themeManager
         self.useMocks = useMocks
         self.output = output
         self.stateModel = StateModel()
@@ -50,6 +60,12 @@ extension OnboardingViewModel {
         var onSelectTriggerMessage: ((StateModel.TriggerMessage) -> Void)?
         var onSelectPlan: ((StateModel.PricingPlan) -> Void)?
         var onNext: (() -> Void)?
+        /// The paywall's real CTA - purchases the selected plan via RevenueCat
+        /// and only completes onboarding once the purchase actually succeeds.
+        var onStartTrial: (() -> Void)?
+        var onRestorePurchases: (() -> Void)?
+        /// Completes onboarding directly with no purchase - used by the
+        /// debug-only skip button, not the paywall CTA.
         var onFinish: (() -> Void)?
     }
 
@@ -57,10 +73,12 @@ extension OnboardingViewModel {
 
         actions.onNameChanged = { [weak self] name in
             self?.stateModel.name = name
+            UserProfileStore.shared.name = name
         }
 
         actions.onAgeChanged = { [weak self] age in
             self?.stateModel.age = age
+            UserProfileStore.shared.age = age
         }
 
         actions.onSelectGender = { [weak self] gender in
@@ -87,6 +105,14 @@ extension OnboardingViewModel {
             self?.advance()
         }
 
+        actions.onStartTrial = { [weak self] in
+            self?.startTrial()
+        }
+
+        actions.onRestorePurchases = { [weak self] in
+            self?.restorePurchases()
+        }
+
         actions.onFinish = { [weak self] in
             self?.finish()
         }
@@ -100,23 +126,35 @@ extension OnboardingViewModel {
     private func selectGender(_ gender: StateModel.GenderChoice) {
         withAnimation(.easeInOut(duration: 0.2)) {
             stateModel.selectedGender = gender
+            UserProfileStore.shared.gender = gender
         }
     }
 
     private func selectTheme(_ theme: AppThemeChoice) {
         // No auto-advance here - the theme step also offers a tone-palette
         // pick below it now, so the user needs a manual Continue.
+        // Updating ThemeManager (not just local/persisted state) is what
+        // makes the whole app re-skin live, right here in onboarding -
+        // ThemeManager's own didSet handles persisting it for next launch.
         withAnimation(.easeInOut(duration: 0.2)) {
             stateModel.selectedTheme = theme
+            themeManager.appTheme = theme
+
+            // Terminal's green-on-black look clashes with every other tone
+            // palette, so picking it suggests the matching Terminal tones
+            // too - the user can still tap a different palette afterward.
+            if theme == .terminal {
+                stateModel.selectedTonePalette = .terminal
+                themeManager.tonePalette = .terminal
+            }
         }
-        UserDefaults.standard.set(theme.rawValue, forKey: "selectedAppTheme")
     }
 
     private func selectTonePalette(_ palette: TonePaletteChoice) {
         withAnimation(.easeInOut(duration: 0.2)) {
             stateModel.selectedTonePalette = palette
+            themeManager.tonePalette = palette
         }
-        UserDefaults.standard.set(palette.rawValue, forKey: "selectedTonePalette")
     }
 
     private func selectTriggerMessage(_ message: StateModel.TriggerMessage) {
@@ -139,6 +177,13 @@ extension OnboardingViewModel {
         }
         if stateModel.isProcessingStep {
             startProcessing()
+        }
+        // Safety net in case the launch-time fetch in `SubscriptionManager.start()`
+        // hasn't finished (or failed) by the time the user reaches the paywall.
+        if stateModel.isFinisherStep, subscriptionManager.currentOffering == nil {
+            Task { [weak self] in
+                await self?.subscriptionManager.fetchOfferings()
+            }
         }
     }
 
@@ -189,6 +234,66 @@ extension OnboardingViewModel {
         guard stateModel.isProcessingStep else { return }
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             stateModel.currentStep += 1
+        }
+    }
+}
+
+// MARK: - Purchasing -
+
+extension OnboardingViewModel {
+
+    private func startTrial() {
+        guard !stateModel.isPurchasing else { return }
+
+        guard let offering = subscriptionManager.currentOffering,
+              let package = stateModel.selectedPlan.package(in: offering) else {
+            stateModel.purchaseErrorMessage = "We couldn't load the subscription plans. Please check your connection and try again."
+            return
+        }
+
+        stateModel.isPurchasing = true
+        Task { [weak self] in
+            guard let self else { return }
+            let outcome = await self.subscriptionManager.purchase(package)
+            self.stateModel.isPurchasing = false
+
+            switch outcome {
+            case .success:
+                self.finish()
+            case .cancelled:
+                break
+            case .failure(let message):
+                self.stateModel.purchaseErrorMessage = message
+            }
+        }
+    }
+
+    private func restorePurchases() {
+        guard !stateModel.isPurchasing else { return }
+
+        stateModel.isPurchasing = true
+        Task { [weak self] in
+            guard let self else { return }
+            let restored = await self.subscriptionManager.restorePurchases()
+            self.stateModel.isPurchasing = false
+
+            if restored {
+                self.finish()
+            } else {
+                self.stateModel.purchaseErrorMessage = "No active subscription was found to restore."
+            }
+        }
+    }
+}
+
+extension OnboardingViewModel.StateModel.PricingPlan {
+
+    /// Not `fileprivate` - `ManageSubscriptionViewModel` (Settings) reuses
+    /// this to purchase the same plans post-onboarding.
+    func package(in offering: Offering) -> Package? {
+        switch self {
+        case .monthly: return offering.monthly
+        case .annual: return offering.annual
         }
     }
 }

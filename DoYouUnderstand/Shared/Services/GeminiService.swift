@@ -111,22 +111,34 @@ extension GeminiService {
         }
     }
 
-    private static func invoke(_ body: AnalyzeRequestBody) async throws -> Data {
-        var request = URLRequest(url: SupabaseManager.functionURL(named: "analyze-message"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(SupabaseManager.anonKey)", forHTTPHeaderField: "Authorization")
-        request.setValue(SupabaseManager.anonKey, forHTTPHeaderField: "apikey")
-        request.httpBody = try JSONEncoder().encode(body)
+    /// The very first Gemini call of a session occasionally fails - most
+    /// likely a cold Supabase Edge Function start or a transient upstream
+    /// 429/503 from Gemini - and simply retrying makes it succeed, which
+    /// matches what manually tapping again already did. Retrying here once
+    /// automatically means the user usually never sees that first failure
+    /// at all.
+    private static func invoke(_ body: AnalyzeRequestBody, retriesRemaining: Int = 2) async throws -> Data {
+        do {
+            var request = URLRequest(url: SupabaseManager.functionURL(named: "analyze-message"))
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer \(SupabaseManager.anonKey)", forHTTPHeaderField: "Authorization")
+            request.setValue(SupabaseManager.anonKey, forHTTPHeaderField: "apikey")
+            request.httpBody = try JSONEncoder().encode(body)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
 
-        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
-            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw ServiceError.server(message)
+            guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+                let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+                throw ServiceError.server(message)
+            }
+
+            return data
+        } catch {
+            guard retriesRemaining > 0 else { throw error }
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            return try await invoke(body, retriesRemaining: retriesRemaining - 1)
         }
-
-        return data
     }
 }
 

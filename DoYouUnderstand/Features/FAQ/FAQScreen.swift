@@ -72,10 +72,12 @@ extension FAQScreen {
 
                         Spacer()
                     }
+                    .onboardingReveal(delay: 0)
 
                     VStack(spacing: .space12) {
-                        ForEach(stateModel.questions) { item in
+                        ForEach(Array(stateModel.questions.enumerated()), id: \.element.id) { index, item in
                             FAQRow(item: item)
+                                .onboardingReveal(delay: 0.06 + Double(index) * 0.04)
                         }
                     }
                 }
@@ -103,12 +105,22 @@ extension FAQScreen {
                     .foregroundStyle(Theme.Colors.Text.muted)
                     .lineSpacing(4)
                     .padding(.top, .space8)
+                    .padding(.leading, 36 + .space12)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } label: {
-                Text(item.question)
-                    .font(Theme.Typography.bodyText.weight(.bold))
-                    .foregroundStyle(Theme.Colors.Text.title)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: .space12) {
+                    Image(systemName: item.icon)
+                        .font(Theme.Typography.bodyText)
+                        .foregroundStyle(Theme.Colors.Main.accent)
+                        .frame(width: 36, height: 36)
+                        .background(Theme.Colors.Main.accent.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: .space8))
+
+                    Text(item.question)
+                        .font(Theme.Typography.bodyText.weight(.bold))
+                        .foregroundStyle(Theme.Colors.Text.title)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .tint(Theme.Colors.Text.muted)
             .padding(.space16)

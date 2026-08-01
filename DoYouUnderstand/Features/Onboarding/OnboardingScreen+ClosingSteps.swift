@@ -70,6 +70,11 @@ extension OnboardingScreen {
         ]
 
         var body: some View {
+            // The features list + trial callout + ticker + pricing + savings
+            // line no longer reliably fit in the space between the header
+            // and the "START FREE TRIAL" footer on smaller screens - this
+            // step now scrolls like the other content-heavy steps do.
+            ScrollView {
             VStack(alignment: .leading, spacing: .space24) {
                 Text("PROFILE COMPLETE")
                     .font(Theme.Typography.badgeLabel)
@@ -112,11 +117,11 @@ extension OnboardingScreen {
                         .clipShape(RoundedRectangle(cornerRadius: .space8))
 
                     VStack(alignment: .leading, spacing: .space2) {
-                        Text("3 FREE USES")
+                        Text("FREE TRIAL")
                             .font(Theme.Typography.badgeLabel)
                             .foregroundStyle(Theme.Colors.Text.title)
 
-                        Text("Try it free. No credit card required.")
+                        Text("Try it risk-free. Cancel before it ends and you won't be charged.")
                             .font(Theme.Typography.smallBody)
                             .foregroundStyle(Theme.Colors.Text.muted)
                     }
@@ -131,6 +136,10 @@ extension OnboardingScreen {
                         .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
                 )
                 .onboardingReveal(delay: 0.52)
+
+                // MARK: - Feature Ticker
+                PaywallFeatureTicker()
+                    .onboardingReveal(delay: 0.58)
 
                 // MARK: - Pricing
                 VStack(alignment: .leading, spacing: .space12) {
@@ -158,10 +167,22 @@ extension OnboardingScreen {
                             }
                         }
                     }
+
+                    if isDiscountActive {
+                        HStack(spacing: .space6) {
+                            Image(systemName: "tag.fill")
+                            Text("You'll save \(stateModel.selectedPlan.discountSavingsLabel) if you subscribe within the next 3 hours.")
+                        }
+                        .font(Theme.Typography.smallBody.weight(.bold))
+                        .foregroundStyle(Theme.Colors.Main.success)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .onboardingReveal(delay: 0.62)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 
@@ -179,15 +200,16 @@ extension OnboardingScreen {
                         HStack(spacing: .space8) {
                             Text(plan.rawValue)
                                 .font(Theme.Typography.bodyText.weight(.bold))
+                                .foregroundStyle(Theme.Colors.Text.title)
 
                             if let badge = plan.badge {
                                 Text(badge)
                                     .font(Theme.Typography.tinyLabel)
-                                    .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Main.accent)
+                                    .foregroundStyle(Theme.Colors.Main.accent)
                                     .padding(.horizontal, .space6)
                                     .padding(.vertical, .space2)
                                     .overlay(
-                                        Capsule().stroke(isSelected ? Theme.Colors.Main.background : Theme.Colors.Main.accent, lineWidth: 1)
+                                        Capsule().stroke(Theme.Colors.Main.accent, lineWidth: 1)
                                     )
                             }
                         }
@@ -196,34 +218,95 @@ extension OnboardingScreen {
                             HStack(spacing: .space6) {
                                 Text(plan.standardPrice)
                                     .strikethrough()
-                                    .foregroundStyle(isSelected ? Theme.Colors.Main.background.opacity(0.6) : Theme.Colors.Text.muted)
+                                    .foregroundStyle(Theme.Colors.Text.muted)
 
                                 Text("\(plan.discountedPrice)\(plan.period)")
+                                    .foregroundStyle(Theme.Colors.Text.title)
                             }
                             .font(Theme.Typography.smallBody)
                         } else {
                             Text("\(plan.standardPrice)\(plan.period)")
                                 .font(Theme.Typography.smallBody)
+                                .foregroundStyle(Theme.Colors.Text.title)
                         }
                     }
-                    .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Text.title)
 
                     Spacer()
 
-                    Image(systemName: "checkmark.circle.fill")
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 20))
-                        .foregroundStyle(Theme.Colors.Main.background)
-                        .opacity(isSelected ? 1 : 0)
+                        .foregroundStyle(isSelected ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle)
                 }
                 .padding(.space16)
-                .background(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.cardSurface)
+                // Selected state used to fully invert to solid black/white,
+                // which read as jarring next to the rest of the app's flat
+                // dark cards - a soft accent tint + border communicates
+                // selection just as clearly without the harsh flip, and
+                // keeps all text at normal (never opacity-reduced) contrast.
+                .background(isSelected ? Theme.Colors.Main.accent.opacity(0.12) : Theme.Colors.Main.cardSurface)
                 .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
                 .overlay(
                     RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                        .stroke(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.borderSubtle, lineWidth: isSelected ? 2 : 1)
+                        .stroke(isSelected ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle, lineWidth: isSelected ? 2 : 1)
                 )
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    /// A row of real feature badges above the pricing section that slowly
+    /// auto-advances through itself, while still being manually swipeable.
+    /// An earlier version auto-scrolled via a measured `.offset()` inside a
+    /// hidden-view/`GeometryReader` trick, but that combination corrupted
+    /// the reported frame of later sibling views (broke hit testing, and
+    /// would have been equally fragile for real layout). Driving a real
+    /// `ScrollViewReader.scrollTo(_:)` on a timer avoids that entirely -
+    /// it's a plain `ScrollView`, just nudged forward periodically.
+    struct PaywallFeatureTicker: View {
+
+        private static let badges: [String] = [
+            "🔒 100% Private",
+            "⚡ Instant AI Analysis",
+            "🎯 15 Reply Tones",
+            "🧠 Gemini-Powered",
+            "✍️ Edit Any Reply"
+        ]
+
+        @State private var currentIndex = 0
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+        var body: some View {
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: .space12) {
+                        ForEach(Array(Self.badges.enumerated()), id: \.offset) { index, badge in
+                            Text(badge)
+                                .font(Theme.Typography.tinyLabel)
+                                .foregroundStyle(Theme.Colors.Text.muted)
+                                .padding(.horizontal, .space12)
+                                .padding(.vertical, .space6)
+                                .background(Theme.Colors.Main.cardSurface)
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule().stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
+                                )
+                                .fixedSize()
+                                .id(index)
+                        }
+                    }
+                }
+                .task {
+                    guard !reduceMotion else { return }
+                    while !Task.isCancelled {
+                        try? await Task.sleep(nanoseconds: 2_200_000_000)
+                        guard !Task.isCancelled else { return }
+                        currentIndex = (currentIndex + 1) % Self.badges.count
+                        withAnimation(.easeInOut(duration: 0.7)) {
+                            proxy.scrollTo(currentIndex, anchor: .leading)
+                        }
+                    }
+                }
+            }
         }
     }
 }

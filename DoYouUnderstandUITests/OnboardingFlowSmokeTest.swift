@@ -100,8 +100,15 @@ final class OnboardingFlowSmokeTest: XCTestCase {
         add(paywallScreenshot)
         trialButton.tap()
 
+        // RevenueCat's test-mode API key swaps the real StoreKit sheet for its
+        // own "Test Store Purchase" debug overlay - tap through a simulated
+        // successful purchase to let onboarding actually complete.
+        let testPurchaseAlert = app.alerts["Test Store Purchase"]
+        XCTAssertTrue(testPurchaseAlert.waitForExistence(timeout: 5))
+        testPurchaseAlert.buttons["Test valid purchase"].tap()
+
         let dashboardTitle = app.staticTexts["DO YOU\nUNDERSTAND?!"]
-        XCTAssertTrue(dashboardTitle.waitForExistence(timeout: 2))
+        XCTAssertTrue(dashboardTitle.waitForExistence(timeout: 5))
     }
 
     @MainActor

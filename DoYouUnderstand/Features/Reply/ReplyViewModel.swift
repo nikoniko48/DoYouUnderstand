@@ -211,7 +211,7 @@ extension ReplyViewModel {
     private func toggleTweak(id: UUID) {
         guard let index = stateModel.options.firstIndex(where: { $0.id == id }) else { return }
 
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
             stateModel.options[index].isTweaking.toggle()
         }
     }
@@ -230,6 +230,11 @@ extension ReplyViewModel {
         guard let index = stateModel.options.firstIndex(where: { $0.id == id }) else { return }
         guard !stateModel.options[index].isRegenerating else { return }
 
+        guard !UsageLimiter.isAtDailyLimit else {
+            stateModel.limitReachedMessage = UsageLimiter.limitReachedMessage
+            return
+        }
+
         let option = stateModel.options[index]
         stateModel.options[index].isRegenerating = true
 
@@ -237,6 +242,7 @@ extension ReplyViewModel {
             guard let self else { return }
             do {
                 let newText = try await GeminiService.tweak(replyText: option.text, tone: option.tone, instruction: instruction)
+                UsageLimiter.recordUsage()
                 if let idx = self.stateModel.options.firstIndex(where: { $0.id == id }) {
                     self.stateModel.options[idx].text = newText
                     self.stateModel.options[idx].isRegenerating = false
@@ -257,7 +263,12 @@ extension ReplyViewModel {
     }
 
     private func generateMoreTones() {
-        guard !stateModel.isGeneratingMoreTones else { return }
+        guard !stateModel.isGeneratingMoreTones, !stateModel.hasAllTones else { return }
+
+        guard !UsageLimiter.isAtDailyLimit else {
+            stateModel.limitReachedMessage = UsageLimiter.limitReachedMessage
+            return
+        }
 
         let text = stateModel.originalMessage
         let existingTones = stateModel.options.map { $0.tone }
@@ -267,12 +278,28 @@ extension ReplyViewModel {
             guard let self else { return }
             do {
                 let payload = try await GeminiService.reply(text: text, images: [], excludeTones: existingTones)
-                let newOptions = payload.replies.map { StateModel.ReplyOption(tone: $0.tone, text: $0.text) }
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    self.stateModel.options.append(contentsOf: newOptions)
+                UsageLimiter.recordUsage()
+                // The model occasionally repeats a tone we already have -
+                // drop those rather than let a duplicate tile silently
+                // appear (and rather than fail the whole request over it).
+                let existingSet = Set(existingTones)
+                let newOptions = payload.replies
+                    .filter { !existingSet.contains($0.tone) }
+                    .map { StateModel.ReplyOption(tone: $0.tone, text: $0.text) }
+
+                if newOptions.isEmpty {
+                    // Every tone the model returned was one we already have -
+                    // from the user's side this would otherwise look like
+                    // the tap silently did nothing, so treat it the same as
+                    // a failure rather than succeeding with zero new tiles.
+                    self.stateModel.errorMessage = "Couldn't generate more tones that time. Please try again."
+                } else {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        self.stateModel.options.append(contentsOf: newOptions)
+                    }
                 }
             } catch {
-                // TODO: surface a user-facing error state.
+                self.stateModel.errorMessage = "Couldn't generate more tones. Please try again."
             }
             self.stateModel.isGeneratingMoreTones = false
         }

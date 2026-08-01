@@ -18,6 +18,7 @@ extension InputViewModel {
         var isLoaderPresented: Bool = false
         var loaderMessage: String = "Processing photos..."
         var errorMessage: String?
+        var limitReachedMessage: String?
         var isCameraPresented: Bool = false
         var inputText: String = ""
         var selectedType: AnalysisType = .explain

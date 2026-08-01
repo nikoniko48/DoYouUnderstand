@@ -74,24 +74,7 @@ extension DashboardScreen {
                             .font(Typography.screenTitle)
                             .foregroundStyle(Colors.Text.muted)
                     }
-                    .padding(.trailing, .space12)
-
-                    HStack(spacing: .space4) {
-                        Image(systemName: "bolt.fill")
-                            .font(Typography.bodyText)
-                        
-                        Text("\(stateModel.scansRemaining)")
-                            .font(Typography.bodyText)
-                    }
-                    .foregroundStyle(Colors.Main.accent)
-                    .padding(.horizontal, .space12)
-                    .padding(.vertical, .space6)
-                    .background(Colors.Main.accent.opacity(0.12))
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Colors.Main.accent.opacity(0.3), lineWidth: 1)
-                    )
+                    .accessibilityIdentifier("dashboardSettingsButton")
                 }
                 .padding(.bottom, .space16)
                 
@@ -167,7 +150,7 @@ extension DashboardScreen {
                     } label: {
                         Image(systemName: "plus")
                             .font(Typography.hugeTitle)
-                            .foregroundStyle(.black)
+                            .foregroundStyle(Colors.Main.accent.contrastingForeground)
                             .frame(width: StaticData.Layout.floatingButtonSize.height, height: StaticData.Layout.floatingButtonSize.width)
                             .background(Colors.Main.accent)
                             .clipShape(Circle())

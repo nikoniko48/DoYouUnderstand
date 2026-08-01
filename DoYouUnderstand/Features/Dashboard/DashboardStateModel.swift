@@ -12,14 +12,9 @@ extension DashboardViewModel {
     @Observable
     final class StateModel: StateModelProtocol {
         var history: [HistoryItem]
-        var scansRemaining: Int
-        
-        init(
-            history: [HistoryItem] = [],
-            scansRemaining: Int = .zero
-        ) {
+
+        init(history: [HistoryItem] = []) {
             self.history = history
-            self.scansRemaining = scansRemaining
         }
     }
 }

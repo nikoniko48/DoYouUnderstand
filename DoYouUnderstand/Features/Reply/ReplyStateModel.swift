@@ -15,6 +15,13 @@ extension ReplyViewModel {
         var originalTone: ToneAnalysis?
         var options: [ReplyOption] = []
         var isGeneratingMoreTones: Bool = false
+        var limitReachedMessage: String?
+        var errorMessage: String?
+
+        /// All 15 tones are already showing - there's nothing left to generate.
+        var hasAllTones: Bool {
+            options.count >= Tone.allCases.count
+        }
 
         init(originalTone: ToneAnalysis? = nil, options: [ReplyOption] = []) {
             self.originalTone = originalTone

@@ -9,6 +9,7 @@ import Foundation
 
 struct FAQItem: Identifiable {
     let id: String
+    let icon: String
     let question: String
     let answer: String
 }

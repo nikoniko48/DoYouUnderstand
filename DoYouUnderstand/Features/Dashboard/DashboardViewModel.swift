@@ -95,7 +95,6 @@ extension DashboardViewModel {
 
     private func loadHistory() {
         stateModel.history = historyService.fetchAll().map(HistoryItem.init)
-        stateModel.scansRemaining = 7 // TODO: Wire to real usage/subscription quota once that's built.
         state = .loaded(stateModel)
     }
 

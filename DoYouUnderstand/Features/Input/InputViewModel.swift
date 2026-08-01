@@ -117,6 +117,11 @@ extension InputViewModel {
 extension InputViewModel {
     
     private func analyse() {
+        guard !UsageLimiter.isAtDailyLimit else {
+            stateModel.limitReachedMessage = UsageLimiter.limitReachedMessage
+            return
+        }
+
         let text = stateModel.inputText
         let images = stateModel.images.compactMap {
             $0.image.resized(maxDimension: 1024).jpegData(compressionQuality: 0.5)
@@ -132,11 +137,13 @@ extension InputViewModel {
                 switch type {
                 case .explain:
                     let payload = try await GeminiService.explain(text: text, images: images)
+                    UsageLimiter.recordUsage()
                     self.historyService.save(.explanation(payload))
                     self.stateModel.isLoaderPresented = false
                     self.output(.explain(payload))
                 case .reply:
                     let payload = try await GeminiService.reply(text: text, images: images)
+                    UsageLimiter.recordUsage()
                     self.historyService.save(.reply(payload))
                     self.stateModel.isLoaderPresented = false
                     self.output(.reply(payload))

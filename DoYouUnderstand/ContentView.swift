@@ -15,7 +15,6 @@ private let debugAlwaysShowOnboarding = true
 struct ContentView: View {
     @State private var router = NavigationManager()
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
-    @AppStorage("selectedAppTheme") private var selectedThemeRaw: String = AppThemeChoice.light.rawValue
 
     // Decided once per launch (honoring the debug override below), then
     // driven purely by app state afterward - so finishing onboarding always
@@ -56,10 +55,30 @@ struct ContentView: View {
                     SettingsScreen { output in
                         router.handle(.settings(output))
                     }
+                case .themeSettings:
+                    ThemeSettingsScreen { output in
+                        router.handle(.themeSettings(output))
+                    }
+                case .languageSettings:
+                    LanguageSettingsScreen { output in
+                        router.handle(.languageSettings(output))
+                    }
+                case .privacyPolicy:
+                    PrivacyPolicyScreen { output in
+                        router.handle(.privacyPolicy(output))
+                    }
+                case .profile:
+                    ProfileScreen { output in
+                        router.handle(.profile(output))
+                    }
+                case .manageSubscription:
+                    ManageSubscriptionScreen { output in
+                        router.handle(.manageSubscription(output))
+                    }
                 }
             }
         }
-        .preferredColorScheme(AppThemeChoice(rawValue: selectedThemeRaw)?.colorScheme)
+        .preferredColorScheme(ThemeManager.shared.appTheme.colorScheme)
     }
 }
 

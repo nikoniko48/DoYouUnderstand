@@ -121,15 +121,14 @@ extension ExplanationViewModel {
         output(.goBack)
     }
     
+    /// Toggles between the breakdown tiles and the plain-English summary -
+    /// this never leaves the screen. Only the header's back button does
+    /// that (previously "GOT IT!" called goBack(), which meant the button
+    /// unexpectedly exited straight to Dashboard instead of just returning
+    /// to the tiles).
     private func handleMainAction() {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-            if stateModel.interactionStep == 0 {
-                // Switch to ELI5 Mode
-                stateModel.interactionStep = 1
-            } else {
-                // Final Step: Go back to dashboard
-                goBack()
-            }
+            stateModel.interactionStep = stateModel.interactionStep == 0 ? 1 : 0
         }
     }
 }

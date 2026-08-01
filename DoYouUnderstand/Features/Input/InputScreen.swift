@@ -281,7 +281,7 @@ extension InputScreen {
                         Text("Analyze input")
                     }
                     .font(Typography.primaryButton)
-                    .foregroundStyle(stateModel.isAnalysisEnabled ? .black : Colors.Text.muted)
+                    .foregroundStyle(stateModel.isAnalysisEnabled ? Colors.Main.accent.contrastingForeground : Colors.Text.muted)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
                     .background(
@@ -336,6 +336,20 @@ extension InputScreen {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(stateModel.errorMessage ?? "")
+            }
+            // MARK: - DAILY LIMIT ALERT -
+            .alert(
+                "You're on a roll! 🔥",
+                isPresented: Binding(
+                    get: { stateModel.limitReachedMessage != nil },
+                    set: { isPresented in
+                        if !isPresented { stateModel.limitReachedMessage = nil }
+                    }
+                )
+            ) {
+                Button("Got it", role: .cancel) {}
+            } message: {
+                Text(stateModel.limitReachedMessage ?? "")
             }
             // MARK: - CAMERA -
             .fullScreenCover(isPresented: $stateModel.isCameraPresented) {

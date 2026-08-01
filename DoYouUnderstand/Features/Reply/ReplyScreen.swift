@@ -129,26 +129,42 @@ extension ReplyScreen {
                         }
 
                         // MARK: - Generate More Tones
-                        Button {
-                            actions.onGenerateMoreTones?()
-                        } label: {
+                        if stateModel.hasAllTones {
                             HStack(spacing: .space8) {
-                                if stateModel.isGeneratingMoreTones {
-                                    ProgressView()
-                                        .tint(.black)
-                                } else {
-                                    Image(systemName: "sparkles")
-                                    Text("Generate More Tones")
-                                }
+                                Image(systemName: "checkmark.seal.fill")
+                                Text("That's every tone we've got!")
                             }
                             .font(Typography.smallBody.weight(.bold))
-                            .foregroundStyle(.black)
+                            .foregroundStyle(Colors.Text.muted)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(Colors.Main.accent)
+                            .background(Colors.Main.cardSurface)
                             .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                                    .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                            )
+                        } else {
+                            Button {
+                                actions.onGenerateMoreTones?()
+                            } label: {
+                                HStack(spacing: .space8) {
+                                    if stateModel.isGeneratingMoreTones {
+                                        BouncingDotsLoader(color: Colors.Main.accent.contrastingForeground)
+                                    } else {
+                                        Image(systemName: "sparkles")
+                                        Text("Generate More Tones")
+                                    }
+                                }
+                                .font(Typography.smallBody.weight(.bold))
+                                .foregroundStyle(Colors.Main.accent.contrastingForeground)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Colors.Main.accent)
+                                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                            }
+                            .disabled(stateModel.isGeneratingMoreTones)
                         }
-                        .disabled(stateModel.isGeneratingMoreTones)
 
                         Spacer()
                     }
@@ -156,6 +172,34 @@ extension ReplyScreen {
                     .padding(.top, .space16)
                     .frame(minHeight: proxy.size.height)
                 }
+            }
+            // MARK: - DAILY LIMIT ALERT -
+            .alert(
+                "You're on a roll! 🔥",
+                isPresented: Binding(
+                    get: { stateModel.limitReachedMessage != nil },
+                    set: { isPresented in
+                        if !isPresented { stateModel.limitReachedMessage = nil }
+                    }
+                )
+            ) {
+                Button("Got it", role: .cancel) {}
+            } message: {
+                Text(stateModel.limitReachedMessage ?? "")
+            }
+            // MARK: - ERROR ALERT -
+            .alert(
+                "Something Went Wrong",
+                isPresented: Binding(
+                    get: { stateModel.errorMessage != nil },
+                    set: { isPresented in
+                        if !isPresented { stateModel.errorMessage = nil }
+                    }
+                )
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(stateModel.errorMessage ?? "")
             }
         }
     }
@@ -311,7 +355,12 @@ extension ReplyScreen {
 
                     if option.isTweaking {
                         TweakSection(option: $option, actions: actions)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
+                            .transition(
+                                .asymmetric(
+                                    insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top)),
+                                    removal: .opacity
+                                )
+                            )
                     }
                 }
             }
@@ -324,7 +373,11 @@ extension ReplyScreen {
             )
             .animation(.easeInOut(duration: 0.25), value: option.isEditing)
             .animation(.easeInOut(duration: 0.25), value: option.isCopied)
-            .animation(.easeInOut(duration: 0.25), value: option.isTweaking)
+            // No .animation(value: option.isTweaking) here - toggleTweak()
+            // already wraps the mutation in its own withAnimation(...). A
+            // second implicit animation modifier on the same value fought
+            // it (mismatched curve/duration), which is what caused the
+            // janky top-to-bottom "flowing" text when expanding.
         }
     }
 

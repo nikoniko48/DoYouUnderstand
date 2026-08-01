@@ -15,6 +15,11 @@ enum Route: Hashable {
     case reply(ReplyViewModel.Destination)
     case faq
     case settings
+    case themeSettings
+    case languageSettings
+    case privacyPolicy
+    case profile
+    case manageSubscription
 }
 
 @Observable
@@ -45,6 +50,11 @@ extension NavigationManager {
         case reply(ReplyViewModel.Output)
         case faq(FAQViewModel.Output)
         case settings(SettingsViewModel.Output)
+        case themeSettings(ThemeSettingsViewModel.Output)
+        case languageSettings(LanguageSettingsViewModel.Output)
+        case privacyPolicy(PrivacyPolicyViewModel.Output)
+        case profile(ProfileViewModel.Output)
+        case manageSubscription(ManageSubscriptionViewModel.Output)
     }
 
     func handle(_ event: FlowEvent) {
@@ -61,6 +71,16 @@ extension NavigationManager {
             handleFAQ(output)
         case .settings(let output):
             handleSettings(output)
+        case .themeSettings(let output):
+            handleThemeSettings(output)
+        case .languageSettings(let output):
+            handleLanguageSettings(output)
+        case .privacyPolicy(let output):
+            handlePrivacyPolicy(output)
+        case .profile(let output):
+            handleProfile(output)
+        case .manageSubscription(let output):
+            handleManageSubscription(output)
         }
     }
 
@@ -114,6 +134,53 @@ extension NavigationManager {
     }
 
     func handleSettings(_ output: SettingsViewModel.Output) {
+        switch output {
+        case .goBack:
+            popBack()
+        case .theme:
+            navigate(to: .themeSettings)
+        case .language:
+            navigate(to: .languageSettings)
+        case .privacyPolicy:
+            navigate(to: .privacyPolicy)
+        case .profile:
+            navigate(to: .profile)
+        case .manageSubscription:
+            navigate(to: .manageSubscription)
+        case .faq:
+            navigate(to: .faq)
+        }
+    }
+
+    func handleThemeSettings(_ output: ThemeSettingsViewModel.Output) {
+        switch output {
+        case .goBack:
+            popBack()
+        }
+    }
+
+    func handleLanguageSettings(_ output: LanguageSettingsViewModel.Output) {
+        switch output {
+        case .goBack:
+            popBack()
+        }
+    }
+
+    func handlePrivacyPolicy(_ output: PrivacyPolicyViewModel.Output) {
+        switch output {
+        case .goBack:
+            popBack()
+        }
+    }
+
+    func handleProfile(_ output: ProfileViewModel.Output) {
+        switch output {
+        case .goBack:
+            popBack()
+        }
+    }
+
+    func handleManageSubscription(_ output: ManageSubscriptionViewModel.Output) {
         switch output {
         case .goBack:
             popBack()

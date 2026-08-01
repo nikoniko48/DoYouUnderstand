@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		EB6D57136C9D2895175E924D /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 69FBCE74D68E396CB27B7115 /* RevenueCat */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B1DCBBE12FD7596500FF909B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EB6D57136C9D2895175E924D /* RevenueCat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = DoYouUnderstand;
 			packageProductDependencies = (
+				69FBCE74D68E396CB27B7115 /* RevenueCat */,
 			);
 			productName = DoYouUnderstand;
 			productReference = B1DCBBD02FD7596400FF909B /* DoYouUnderstand.app */;
@@ -134,8 +140,6 @@
 				B1DCBBE32FD7596500FF909B /* DoYouUnderstandTests */,
 			);
 			name = DoYouUnderstandTests;
-			packageProductDependencies = (
-			);
 			productName = DoYouUnderstandTests;
 			productReference = B1DCBBE02FD7596500FF909B /* DoYouUnderstandTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -157,8 +161,6 @@
 				B1DCBBED2FD7596500FF909B /* DoYouUnderstandUITests */,
 			);
 			name = DoYouUnderstandUITests;
-			packageProductDependencies = (
-			);
 			productName = DoYouUnderstandUITests;
 			productReference = B1DCBBEA2FD7596500FF909B /* DoYouUnderstandUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -195,6 +197,9 @@
 			);
 			mainGroup = B1DCBBC72FD7596400FF909B;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1720D12F0044E47DFD1200A6 /* XCRemoteSwiftPackageReference "purchases-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B1DCBBD12FD7596400FF909B /* Products */;
 			projectDirPath = "";
@@ -562,6 +567,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1720D12F0044E47DFD1200A6 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		69FBCE74D68E396CB27B7115 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1720D12F0044E47DFD1200A6 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B1DCBBC82FD7596400FF909B /* Project object */;
 }

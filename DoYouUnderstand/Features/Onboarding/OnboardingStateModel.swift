@@ -20,6 +20,8 @@ extension OnboardingViewModel {
         var selectedTriggerMessage: TriggerMessage?
         var processingMessageIndex: Int
         var selectedPlan: PricingPlan
+        var isPurchasing = false
+        var purchaseErrorMessage: String?
 
         let totalSteps: Int = Step.allCases.count
         let progressStepCount: Int = Step.allCases.count - 1
@@ -29,7 +31,7 @@ extension OnboardingViewModel {
             name: String = "",
             age: Double = 25,
             selectedGender: GenderChoice? = nil,
-            selectedTheme: AppThemeChoice? = nil,
+            selectedTheme: AppThemeChoice? = ThemeManager.shared.appTheme,
             selectedTonePalette: TonePaletteChoice? = nil,
             selectedTriggerMessage: TriggerMessage? = nil,
             processingMessageIndex: Int = 0,
@@ -166,6 +168,15 @@ extension OnboardingViewModel.StateModel {
 
         func price(discountActive: Bool) -> String {
             discountActive ? discountedPrice : standardPrice
+        }
+
+        /// Flat dollar difference between `standardPrice` and `discountedPrice`,
+        /// shown in the "you'll save X" nudge under the pricing rows.
+        var discountSavingsLabel: String {
+            switch self {
+            case .monthly: return "$2"
+            case .annual: return "$21"
+            }
         }
     }
 

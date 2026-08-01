@@ -9,43 +9,54 @@ import SwiftUI
 import UIKit
 
 enum Theme {
-    
+
+    /// All colors are computed from `ThemeManager.shared` (not static
+    /// asset-catalog lookups), so every call site below automatically
+    /// re-skins - live, no relaunch needed - whenever the current
+    /// `AppThemeChoice`/`TonePaletteChoice` changes.
     enum Colors {
-        
+
         enum Main {
-            static let background = Color("AppBackground")
-            static let backgroundSecondary = Color("AppBackgroundSecondary")
-            static let primary = Color("AppPrimary")
-            static let borderSubtle = Color("BorderSubtle")
-            static let accent = Color("AppAccent")
-            static let secondaryAccent = Color("AppSecondaryAccent")
-            static let cardSurface = Color("CardSurface")
-            static let success = Color("SuccessGreen")
+            static var background: Color { ThemeManager.shared.appTheme.background }
+            static var backgroundSecondary: Color { ThemeManager.shared.appTheme.backgroundSecondary }
+            static var primary: Color { ThemeManager.shared.appTheme.primary }
+            static var borderSubtle: Color { ThemeManager.shared.appTheme.borderSubtle }
+            static var accent: Color { ThemeManager.shared.appTheme.accent }
+            static var secondaryAccent: Color { ThemeManager.shared.appTheme.secondaryAccent }
+            static var cardSurface: Color { ThemeManager.shared.appTheme.cardSurface }
+            static var success: Color { ThemeManager.shared.appTheme.success }
         }
-        
+
         enum Text {
-            static let title = Color("TextTitle")
-            static let body = Color("TextBody")
-            static let highlight = Color("TextHighlight")
-            static let muted = Color("TextMuted")
+            static var title: Color { ThemeManager.shared.appTheme.textTitle }
+            static var body: Color { ThemeManager.shared.appTheme.textBody }
+            static var highlight: Color { ThemeManager.shared.appTheme.textHighlight }
+            static var muted: Color { ThemeManager.shared.appTheme.textMuted }
         }
-        
+
         enum Tone {
-            static let anxious = Color("ToneAnxious")
-            static let condescending = Color("ToneCondescending")
-            static let overEager = Color("ToneOverEager")
-            static let passiveAggressive = Color("TonePassiveAggressive")
-            static let sarcastic = Color("ToneSarcastic")
-            static let professional = Color("ToneProfessional")
-            static let assertive = Color("ToneAssertive")
-            static let friendly = Color("ToneFriendly")
-            static let playful = Color("TonePlayful")
-            static let apologetic = Color("ToneApologetic")
-            static let empathetic = Color("ToneEmpathetic")
-            static let blunt = Color("ToneBlunt")
-            static let flirty = Color("ToneFlirty")
-            static let diplomatic = Color("ToneDiplomatic")
-            static let dismissive = Color("ToneDismissive")
+            static var anxious: Color { color(for: .anxious) }
+            static var condescending: Color { color(for: .condescending) }
+            static var overEager: Color { color(for: .overEager) }
+            static var passiveAggressive: Color { color(for: .passiveAggressive) }
+            static var sarcastic: Color { color(for: .sarcastic) }
+            static var professional: Color { color(for: .professional) }
+            static var assertive: Color { color(for: .assertive) }
+            static var friendly: Color { color(for: .friendly) }
+            static var playful: Color { color(for: .playful) }
+            static var apologetic: Color { color(for: .apologetic) }
+            static var empathetic: Color { color(for: .empathetic) }
+            static var blunt: Color { color(for: .blunt) }
+            static var flirty: Color { color(for: .flirty) }
+            static var diplomatic: Color { color(for: .diplomatic) }
+            static var dismissive: Color { color(for: .dismissive) }
+
+            // Explicitly module-qualified - inside this `Tone` namespace,
+            // the bare name `Tone` would otherwise resolve to itself
+            // (Theme.Colors.Tone) rather than the top-level `Tone` model.
+            private static func color(for tone: DoYouUnderstand.Tone) -> Color {
+                ThemeManager.shared.tonePalette.color(for: tone)
+            }
         }
     }
     
