@@ -14,6 +14,7 @@ extension OnboardingViewModel {
         var currentStep: Int
         var name: String
         var age: Double
+        var selectedGender: GenderChoice?
         var selectedTheme: AppThemeChoice?
         var selectedTonePalette: TonePaletteChoice?
         var selectedTriggerMessage: TriggerMessage?
@@ -27,6 +28,7 @@ extension OnboardingViewModel {
             currentStep: Int = 0,
             name: String = "",
             age: Double = 25,
+            selectedGender: GenderChoice? = nil,
             selectedTheme: AppThemeChoice? = nil,
             selectedTonePalette: TonePaletteChoice? = nil,
             selectedTriggerMessage: TriggerMessage? = nil,
@@ -36,6 +38,7 @@ extension OnboardingViewModel {
             self.currentStep = currentStep
             self.name = name
             self.age = age
+            self.selectedGender = selectedGender
             self.selectedTheme = selectedTheme
             self.selectedTonePalette = selectedTonePalette
             self.selectedTriggerMessage = selectedTriggerMessage
@@ -73,10 +76,12 @@ extension OnboardingViewModel {
 
         var isContinueEnabled: Bool {
             switch step {
-            case .greeting, .age, .intro, .stats, .processing, .privacy, .finisher:
+            case .greeting, .intro, .stats, .processing, .privacy, .finisher:
                 return true
             case .name:
                 return isNameValid
+            case .age:
+                return selectedGender != nil
             case .theme:
                 return selectedTheme != nil
             case .triggerMessage, .tactileHold:
@@ -162,6 +167,15 @@ extension OnboardingViewModel.StateModel {
         func price(discountActive: Bool) -> String {
             discountActive ? discountedPrice : standardPrice
         }
+    }
+
+    enum GenderChoice: String, CaseIterable, Identifiable {
+        case male = "Male"
+        case female = "Female"
+        case nonConforming = "Non-Conforming"
+        case preferNotToSay = "Prefer Not to Say"
+
+        var id: String { rawValue }
     }
 
     enum TriggerMessage: CaseIterable, Identifiable {

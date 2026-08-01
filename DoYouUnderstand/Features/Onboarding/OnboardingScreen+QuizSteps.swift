@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 extension OnboardingScreen {
 
@@ -176,12 +177,18 @@ extension OnboardingScreen {
 
         let onComplete: () -> Void
 
-        private let holdDuration: Double = 1.4
+        // How long a *continuous, unbroken* hold takes to fill the screen,
+        // and how long it takes to drain back to nothing once released.
+        // Draining faster than filling makes letting go feel responsive.
+        private let fillDuration: Double = 1.4
+        private let drainDuration: Double = 0.5
+        private let tickInterval: Double = 1.0 / 60.0
 
         @State private var progress: CGFloat = 0
         @State private var pressLocation: CGPoint?
         @State private var isPressing = false
-        @State private var pressToken = UUID()
+        @State private var hasCompleted = false
+        @State private var driverTask: Task<Void, Never>?
 
         var body: some View {
             GeometryReader { geo in
@@ -211,10 +218,11 @@ extension OnboardingScreen {
                 .frame(width: geo.size.width, height: geo.size.height)
                 .contentShape(Rectangle())
                 // A single gesture drives both the finger-tracked circle
-                // origin and the hold timing. Completion is tied directly to
-                // the growth animation itself finishing (rather than a
-                // separate parallel timer racing it), so what you see is
-                // exactly what triggers the advance.
+                // origin and the press/release state. The fill itself is
+                // driven by a real per-frame loop tied to `isPressing`
+                // rather than a fire-and-forget animation, so the circle is
+                // always an honest reflection of how long you've actually
+                // been holding - hold, and it grows; let go, and it shrinks.
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .local)
                         .onChanged { value in
@@ -228,30 +236,59 @@ extension OnboardingScreen {
                         }
                 )
             }
+            .onDisappear {
+                driverTask?.cancel()
+                driverTask = nil
+            }
         }
 
         private func beginHold() {
+            guard !hasCompleted else { return }
             isPressing = true
-            let token = UUID()
-            pressToken = token
-
-            withAnimation(.linear(duration: holdDuration), completionCriteria: .logicallyComplete) {
-                progress = 1
-            } completion: {
-                guard isPressing, pressToken == token else { return }
-                onComplete()
-            }
+            startDriverLoopIfNeeded()
         }
 
         private func endHold() {
-            guard isPressing else { return }
             isPressing = false
+        }
 
-            if progress < 1 {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) {
-                    progress = 0
+        private func startDriverLoopIfNeeded() {
+            guard driverTask == nil else { return }
+
+            let fillPerTick = CGFloat(tickInterval / fillDuration)
+            let drainPerTick = CGFloat(tickInterval / drainDuration)
+
+            driverTask = Task { @MainActor in
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: UInt64(tickInterval * 1_000_000_000))
+                    guard !Task.isCancelled, !hasCompleted else { break }
+
+                    if isPressing {
+                        progress = min(1, progress + fillPerTick)
+                        if progress >= 1 {
+                            await confirmCompletion()
+                            break
+                        }
+                    } else {
+                        progress = max(0, progress - drainPerTick)
+                        if progress <= 0 {
+                            break
+                        }
+                    }
                 }
+                driverTask = nil
             }
+        }
+
+        @MainActor
+        private func confirmCompletion() async {
+            hasCompleted = true
+
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+
+            onComplete()
         }
     }
 }

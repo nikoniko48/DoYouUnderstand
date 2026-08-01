@@ -44,6 +44,7 @@ extension OnboardingViewModel {
     struct Actions {
         var onNameChanged: ((String) -> Void)?
         var onAgeChanged: ((Double) -> Void)?
+        var onSelectGender: ((StateModel.GenderChoice) -> Void)?
         var onSelectTheme: ((AppThemeChoice) -> Void)?
         var onSelectTonePalette: ((TonePaletteChoice) -> Void)?
         var onSelectTriggerMessage: ((StateModel.TriggerMessage) -> Void)?
@@ -60,6 +61,10 @@ extension OnboardingViewModel {
 
         actions.onAgeChanged = { [weak self] age in
             self?.stateModel.age = age
+        }
+
+        actions.onSelectGender = { [weak self] gender in
+            self?.selectGender(gender)
         }
 
         actions.onSelectTheme = { [weak self] theme in
@@ -91,6 +96,12 @@ extension OnboardingViewModel {
 // MARK: - Functions -
 
 extension OnboardingViewModel {
+
+    private func selectGender(_ gender: StateModel.GenderChoice) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            stateModel.selectedGender = gender
+        }
+    }
 
     private func selectTheme(_ theme: AppThemeChoice) {
         // No auto-advance here - the theme step also offers a tone-palette

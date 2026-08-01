@@ -19,15 +19,26 @@ final class OnboardingFlowSmokeTest: XCTestCase {
         nameField.typeText("Ada")
         app.buttons["Continue"].tap()
 
-        // Step 3 - Age (slider, always valid - just drag it and continue)
+        // Step 3 - Age + gender (slider is always valid, gender needs a pick)
         let ageSlider = app.sliders.firstMatch
         XCTAssertTrue(ageSlider.waitForExistence(timeout: 2))
         ageSlider.adjust(toNormalizedSliderPosition: 0.3)
+        let ageGenderShot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        ageGenderShot.lifetime = .keepAlways
+        ageGenderShot.name = "OnboardingAgeGender"
+        add(ageGenderShot)
+        let genderChip = app.buttons["Non-Conforming"]
+        XCTAssertTrue(genderChip.waitForExistence(timeout: 2))
+        genderChip.tap()
         app.buttons["Continue"].tap()
 
         // Step 4 - Theme + tone palette (selection only, then manual Continue)
         let darkThemeCard = app.staticTexts["Dark"]
         XCTAssertTrue(darkThemeCard.waitForExistence(timeout: 2))
+        let themeInitialShot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        themeInitialShot.lifetime = .keepAlways
+        themeInitialShot.name = "OnboardingTheme_Initial"
+        add(themeInitialShot)
         darkThemeCard.tap()
         app.staticTexts["Neon"].tap()
         let themeScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
@@ -64,10 +75,15 @@ final class OnboardingFlowSmokeTest: XCTestCase {
         add(statsScreenshot)
         app.buttons["Continue"].tap()
 
-        // Step 9 - Tactile hold (press and hold until it fills and auto-advances)
+        // Step 9 - Tactile hold. A short tap/press that releases well before
+        // the fill duration must NOT advance (it should shrink back instead);
+        // only a genuinely sustained hold should.
         let holdPrompt = app.staticTexts["Hold to become a Text Master"]
         XCTAssertTrue(holdPrompt.waitForExistence(timeout: 2))
         let holdTarget = app.otherElements.firstMatch
+        holdTarget.press(forDuration: 0.3)
+        XCTAssertTrue(holdPrompt.waitForExistence(timeout: 1))
+
         holdTarget.press(forDuration: 1.6)
 
         // Step 10 - Privacy

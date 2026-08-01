@@ -104,39 +104,115 @@ extension OnboardingScreen {
         let stateModel: OnboardingViewModel.StateModel
         let actions: OnboardingViewModel.Actions
 
+        // Chunked into rows of 2 up front (not a LazyVGrid) - there are only
+        // ever 4 fixed options, and a plain VStack/HStack lays out
+        // immediately instead of deferring until scrolled into view.
+        private static let genderRows: [[OnboardingViewModel.StateModel.GenderChoice]] = {
+            stride(from: 0, to: OnboardingViewModel.StateModel.GenderChoice.allCases.count, by: 2).map {
+                Array(OnboardingViewModel.StateModel.GenderChoice.allCases[$0..<min($0 + 2, OnboardingViewModel.StateModel.GenderChoice.allCases.count)])
+            }
+        }()
+
         var body: some View {
-            VStack(alignment: .leading, spacing: .space32) {
-                Text("How old are you?")
-                    .font(Theme.Typography.onboardingTitle)
-                    .foregroundStyle(Theme.Colors.Text.title)
+            ScrollView {
+                VStack(alignment: .leading, spacing: .space32) {
+                    VStack(alignment: .leading, spacing: .space8) {
+                        Text("How old are you?")
+                            .font(Theme.Typography.onboardingTitle)
+                            .foregroundStyle(Theme.Colors.Text.title)
+
+                        Text("This helps us tailor tone suggestions and examples to your age group.")
+                            .font(Theme.Typography.bodyText)
+                            .foregroundStyle(Theme.Colors.Text.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     .onboardingReveal(delay: 0)
 
-                VStack(spacing: .space24) {
-                    Text("\(Int(stateModel.age))")
-                        .font(Theme.Typography.spaceGrotesk(size: 72, weight: .black))
-                        .foregroundStyle(Theme.Colors.Main.accent)
-                        .contentTransition(.numericText())
-                        .frame(maxWidth: .infinity)
+                    VStack(spacing: .space24) {
+                        Text("\(Int(stateModel.age))")
+                            .font(Theme.Typography.spaceGrotesk(size: 72, weight: .black))
+                            .foregroundStyle(Theme.Colors.Main.accent)
+                            .contentTransition(.numericText())
+                            .frame(maxWidth: .infinity)
 
-                    Slider(
-                        value: Binding(
-                            get: { stateModel.age },
-                            set: { actions.onAgeChanged?($0) }
-                        ),
-                        in: OnboardingViewModel.StateModel.ageRange,
-                        step: 1
+                        Slider(
+                            value: Binding(
+                                get: { stateModel.age },
+                                set: { actions.onAgeChanged?($0) }
+                            ),
+                            in: OnboardingViewModel.StateModel.ageRange,
+                            step: 1
+                        )
+                        .tint(Theme.Colors.Main.accent)
+                    }
+                    .padding(.space24)
+                    .background(Theme.Colors.Main.cardSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                            .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
                     )
-                    .tint(Theme.Colors.Main.accent)
+                    .onboardingReveal(delay: 0.12)
+
+                    VStack(alignment: .leading, spacing: .space16) {
+                        VStack(alignment: .leading, spacing: .space8) {
+                            Text("What's your gender?")
+                                .font(Theme.Typography.onboardingTitle)
+                                .foregroundStyle(Theme.Colors.Text.title)
+
+                            Text("Helps us fine-tune reply style. Prefer not to answer? That's a valid choice too.")
+                                .font(Theme.Typography.bodyText)
+                                .foregroundStyle(Theme.Colors.Text.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        VStack(spacing: .space12) {
+                            ForEach(Self.genderRows, id: \.self) { row in
+                                HStack(spacing: .space12) {
+                                    ForEach(row) { gender in
+                                        GenderOptionChip(
+                                            title: gender.rawValue,
+                                            isSelected: stateModel.selectedGender == gender
+                                        ) {
+                                            actions.onSelectGender?(gender)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .onboardingReveal(delay: 0.24)
                 }
-                .padding(.space24)
-                .background(Theme.Colors.Main.cardSurface)
-                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                .overlay(
-                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                        .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
-                )
-                .onboardingReveal(delay: 0.12)
             }
+        }
+    }
+
+    struct GenderOptionChip: View {
+
+        let title: String
+        let isSelected: Bool
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                Text(title)
+                    .font(Theme.Typography.onboardingBody.weight(.bold))
+                    .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Text.title)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, .space16)
+                    .padding(.horizontal, .space8)
+                    .background(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.cardSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                            .stroke(
+                                isSelected ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle,
+                                lineWidth: isSelected ? 2 : 1
+                            )
+                    )
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -149,10 +225,17 @@ extension OnboardingScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: .space32) {
                     VStack(alignment: .leading, spacing: .space16) {
-                        Text("Choose your theme.")
-                            .font(Theme.Typography.onboardingTitle)
-                            .foregroundStyle(Theme.Colors.Text.title)
-                            .onboardingReveal(delay: 0)
+                        VStack(alignment: .leading, spacing: .space8) {
+                            Text("Choose your theme.")
+                                .font(Theme.Typography.onboardingTitle)
+                                .foregroundStyle(Theme.Colors.Text.title)
+
+                            Text("Don't worry about picking wrong. You can always change this later in Settings.")
+                                .font(Theme.Typography.bodyText)
+                                .foregroundStyle(Theme.Colors.Text.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .onboardingReveal(delay: 0)
 
                         VStack(spacing: .space12) {
                             ForEach(Array(AppThemeChoice.allCases.enumerated()), id: \.element.id) { index, theme in
