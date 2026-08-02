@@ -19,7 +19,7 @@ struct HistoryCardView: View {
             HStack(alignment: .center, spacing: .space0) {
                 
                 HStack(spacing: .space4) {
-                    Text(item.tone.rawValue.uppercased())
+                    Text(item.tone.displayName.uppercased())
                         .font(Typography.badgeLabel)
                         .foregroundStyle(item.tone.color)
                         .padding(.horizontal, .space8)
@@ -31,7 +31,7 @@ struct HistoryCardView: View {
                                 .stroke(item.tone.color.opacity(0.3), lineWidth: 1)
                         )
                     
-                    Text(item.type.rawValue.uppercased())
+                    Text(item.type.displayName.uppercased())
                         .font(Typography.tinyLabel)
                         .foregroundStyle(item.typeColor)
                         .padding(.horizontal, .space6)

@@ -155,6 +155,7 @@ extension DashboardScreen {
                             .background(Colors.Main.accent)
                             .clipShape(Circle())
                     }
+                    .accessibilityIdentifier("newAnalysisButton")
                     .padding(.bottom, .space12)
                 }
             }

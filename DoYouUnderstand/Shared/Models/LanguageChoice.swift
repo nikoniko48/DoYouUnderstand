@@ -7,9 +7,13 @@
 
 import Foundation
 
-/// UI-only for now - picking a language persists the preference but doesn't
-/// localize anything yet. Wire this up to real string catalogs/`Locale` once
-/// the app actually ships translated copy.
+/// Drives the app's actual display language via `LocalizationManager` (see
+/// that file) - independent of `ReplyLanguage`, which only controls the
+/// language Gemini writes replies in. Only `.english`, `.polish`, and
+/// `.spanish` have real translations in `Localizable.xcstrings` today;
+/// picking `.french`/`.german`/`.portuguese` falls back to English for any
+/// string not yet translated (a String Catalog's normal, safe behavior for
+/// a missing localization) until those are added.
 enum LanguageChoice: String, CaseIterable, Identifiable {
     case english
     case spanish
@@ -39,6 +43,20 @@ enum LanguageChoice: String, CaseIterable, Identifiable {
         case .german: return "🇩🇪"
         case .polish: return "🇵🇱"
         case .portuguese: return "🇵🇹"
+        }
+    }
+
+    /// Fed to `Locale(identifier:)` by `LocalizationManager` to resolve
+    /// `Localizable.xcstrings` lookups against this language specifically,
+    /// regardless of the device's own system language.
+    var localeIdentifier: String {
+        switch self {
+        case .english: return "en"
+        case .spanish: return "es"
+        case .french: return "fr"
+        case .german: return "de"
+        case .polish: return "pl"
+        case .portuguese: return "pt"
         }
     }
 }

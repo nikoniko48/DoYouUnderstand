@@ -32,7 +32,7 @@ extension FAQItem {
             id: "4",
             icon: "bubble.left.and.bubble.right.fill",
             question: "What can I do with a Reply?",
-            answer: "You get 5 ready-to-send replies up front, each in a different tone, with a \"Generate More Tones\" button for 5 more. Tap Tweak on any option to nudge it between two ends of its tone (e.g. more diplomatic vs. more blunt) with a slider, then Regenerate - or just Copy Reply once you've got the one you want."
+            answer: "You get 5 ready-to-send replies right away in contrasting tones, then can generate any of the other 16 tones on demand by tapping its pill. Tap Tweak on any option to nudge it between two ends of its tone (e.g. more diplomatic vs. more blunt) with a slider, then Regenerate - or just Copy Reply once you've got the one you want."
         ),
         FAQItem(
             id: "5",

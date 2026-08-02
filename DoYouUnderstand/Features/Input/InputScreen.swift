@@ -34,55 +34,44 @@ struct InputScreen: View {
             )
         }
         .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.actions.onTap?(.back)
+                } label: {
+                    Image(systemName: "chevron.backward")
+                }
+                .accessibilityIdentifier("backButton")
+            }
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: .space2) {
+                    Text("NEW ANALYSIS")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Text("Paste your text")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(Colors.Text.title)
+                }
+            }
+        }
     }
 }
 
 extension InputScreen {
-    
+
     struct ContentView: View {
-        
+
         @Bindable var stateModel: InputViewModel.StateModel
         let actions: InputViewModel.Actions
-        
+
         @FocusState private var isFocused: Bool
-        
+
         var body: some View {
-            GeometryReader { proxy in
-                ScrollView {
-                    VStack(spacing: .space24) {
-                        
-                        // MARK: - Header -
-                        
-                        HStack(spacing: .space16) {
-                            Button {
-                                actions.onTap?(.back)
-                            } label: {
-                                Image(systemName: "arrow.left")
-                                    .font(Typography.bodyText)
-                                    .scaleEffect(1.2)
-                                    .foregroundStyle(Colors.Text.highlight)
-                                    .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                                    .background(Colors.Main.cardSurface)
-                                    .clipShape(Circle())
-                                    .overlay(
-                                        Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                    )
-                            }
-                            
-                            VStack(alignment: .leading, spacing: .space2) {
-                                Text("NEW ANALYSIS")
-                                    .font(Typography.badgeLabel)
-                                    .foregroundStyle(Colors.Text.muted)
-                                
-                                Text("Paste your text")
-                                    .font(Typography.screenTitle)
-                                    .foregroundStyle(Colors.Text.title)
-                            }
-                            
-                            Spacer()
-                        }
-                        
-                        // MARK: - Input Area -
+            ScrollView {
+                VStack(spacing: .space24) {
+
+                    // MARK: - Input Area -
                         
                         VStack(spacing: .space16) {
                             
@@ -113,7 +102,7 @@ extension InputScreen {
                                             Spacer()
                                             HStack {
                                                 Spacer()
-                                                Text("\(stateModel.characterCount)/\(stateModel.maxCharacters) chars")
+                                                Text(String(format: Loc.t("%d/%d chars"), stateModel.characterCount, stateModel.maxCharacters))
                                                     .font(Typography.smallBody)
                                                     .foregroundStyle(stateModel.isLimitExceeded ? Color.red : Colors.Text.muted)
                                                     .padding(.space12)
@@ -130,32 +119,17 @@ extension InputScreen {
                                     )
 
                                     // MARK: - Clear / Paste Text -
-                                    HStack(spacing: .space16) {
-                                        Button {
+                                    HStack(spacing: .space12) {
+                                        GlassPillButton(icon: "xmark", title: "Clear") {
                                             actions.onTap?(.clearText)
-                                        } label: {
-                                            HStack(spacing: .space4) {
-                                                Image(systemName: "xmark")
-                                                Text("Clear")
-                                            }
-                                            .font(Typography.smallBody)
-                                            .foregroundStyle(Colors.Text.muted)
                                         }
 
-                                        Spacer()
+                                        Spacer(minLength: .space8)
 
-                                        Button {
+                                        GlassPillButton(icon: "doc.on.clipboard", title: "Paste") {
                                             actions.onTap?(.pasteText)
-                                        } label: {
-                                            HStack(spacing: .space4) {
-                                                Image(systemName: "doc.on.clipboard")
-                                                Text("Paste")
-                                            }
-                                            .font(Typography.smallBody)
-                                            .foregroundStyle(Colors.Text.muted)
                                         }
                                     }
-                                    .padding(.horizontal, .space4)
                                 }
                             } else {
                                 // MARK: - Photo gallery -
@@ -220,7 +194,7 @@ extension InputScreen {
                                     }
                                 } else {
                                     Button {} label: {
-                                        ActionLabel(icon: "photo", title: "Max \(stateModel.maxPhotos) Photos")
+                                        ActionLabel(icon: "photo", title: String(format: Loc.t("Max %d Photos"), stateModel.maxPhotos))
                                     }
                                     .disabled(true)
                                     .opacity(0.5)
@@ -268,9 +242,8 @@ extension InputScreen {
                     }
                     .padding(.horizontal, StaticData.Layout.screenPadding)
                     .padding(.top, .space16)
-                    .frame(minHeight: proxy.size.height)
                 }
-            }
+            .scrollDismissesKeyboard(.interactively)
             // MARK: - SUBMIT BUTTON -
             .safeAreaInset(edge: .bottom) {
                 Button {
@@ -282,16 +255,14 @@ extension InputScreen {
                     }
                     .font(Typography.primaryButton)
                     .foregroundStyle(stateModel.isAnalysisEnabled ? Colors.Main.accent.contrastingForeground : Colors.Text.muted)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(
-                        stateModel.isAnalysisEnabled
-                        ? Colors.Main.accent
-                        : Colors.Main.cardSurface
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .animation(.easeInOut, value: stateModel.isAnalysisEnabled)
                 }
+                .buttonStyle(
+                    LiquidGlassCTAButtonStyle(
+                        tint: stateModel.isAnalysisEnabled ? Colors.Main.accent : Colors.Main.cardSurface,
+                        isInteractive: stateModel.isAnalysisEnabled
+                    )
+                )
+                .animation(.easeInOut, value: stateModel.isAnalysisEnabled)
                 .disabled(!stateModel.isAnalysisEnabled)
                 .padding(.horizontal, StaticData.Layout.screenPadding)
                 .padding(.bottom, .space12)
@@ -304,10 +275,8 @@ extension InputScreen {
                             .ignoresSafeArea()
                         
                         VStack(spacing: .space16) {
-                            ProgressView()
-                                .tint(Colors.Main.accent)
-                                .scaleEffect(1.5)
-                            Text(stateModel.loaderMessage)
+                            BouncingDotsLoader(color: Colors.Main.accent, dotSize: 10)
+                            Text(LocalizedStringKey(stateModel.loaderMessage))
                                 .font(Typography.bodyText)
                                 .foregroundStyle(.white)
                         }
@@ -335,7 +304,7 @@ extension InputScreen {
             ) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(stateModel.errorMessage ?? "")
+                Text(LocalizedStringKey(stateModel.errorMessage ?? ""))
             }
             // MARK: - DAILY LIMIT ALERT -
             .alert(
@@ -349,7 +318,7 @@ extension InputScreen {
             ) {
                 Button("Got it", role: .cancel) {}
             } message: {
-                Text(stateModel.limitReachedMessage ?? "")
+                Text(LocalizedStringKey(stateModel.limitReachedMessage ?? ""))
             }
             // MARK: - CAMERA -
             .fullScreenCover(isPresented: $stateModel.isCameraPresented) {
@@ -366,25 +335,52 @@ extension InputScreen {
 // MARK: - Subcomponents
 extension InputScreen {
     
+    /// A compact, content-sized glass button - unlike `LiquidGlassCTAButtonStyle`
+    /// (which always stretches to fill its container), `Clear`/`Paste` need to
+    /// sit side by side at their natural width while still getting a real
+    /// native-glass tap target (padding + `.glassEffect` + `.contentShape`)
+    /// instead of bare icon+text with almost nothing to tap.
+    struct GlassPillButton: View {
+        let icon: String
+        let title: String
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                HStack(spacing: .space6) {
+                    Image(systemName: icon)
+                    Text(LocalizedStringKey(title))
+                }
+                .font(Typography.smallBody.weight(.semibold))
+                .foregroundStyle(Colors.Text.title)
+                .padding(.horizontal, .space16)
+                .padding(.vertical, 10)
+                .glassEffect(.regular.interactive(), in: Capsule())
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     struct ActionLabel: View {
         let icon: String
         let title: String
-        
+
+        private var shape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: .space12, style: .continuous)
+        }
+
         var body: some View {
             HStack(spacing: .space8) {
                 Image(systemName: icon)
-                Text(title)
+                Text(LocalizedStringKey(title))
             }
             .font(Typography.bodyText.weight(.semibold))
             .foregroundStyle(Colors.Main.primary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, .space16)
-            .background(Colors.Main.cardSurface)
-            .clipShape(RoundedRectangle(cornerRadius: .space12))
-            .overlay(
-                RoundedRectangle(cornerRadius: .space12)
-                    .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-            )
+            .glassEffect(.regular.interactive(), in: shape)
+            .contentShape(shape)
         }
     }
     
@@ -402,11 +398,11 @@ extension InputScreen {
                         .font(.system(size: 28))
                         .padding(.bottom, .space4)
                     
-                    Text(title)
+                    Text(LocalizedStringKey(title))
                         .font(Typography.bodyText.weight(.bold))
                         .foregroundStyle(isSelected ? Colors.Main.primary : Colors.Text.title)
-                    
-                    Text(subtitle)
+
+                    Text(LocalizedStringKey(subtitle))
                         .font(Typography.smallBody)
                         .foregroundStyle(Colors.Text.muted)
                 }

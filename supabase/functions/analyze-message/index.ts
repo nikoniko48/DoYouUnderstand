@@ -1,7 +1,7 @@
 // analyze-message
 //
-// Proxies "explain" / "reply" / "tweak" analysis requests to Gemini so the
-// API key never ships inside the iOS app.
+// Proxies "explain" / "reply" / "replyForTone" / "tweak" analysis requests to
+// Gemini so the API key never ships inside the iOS app.
 //
 // Deploy:
 //   supabase functions deploy analyze-message
@@ -26,6 +26,7 @@ const TONES = [
   "Flirty",
   "Diplomatic",
   "Dismissive",
+  "Savage",
 ];
 
 const corsHeaders = {
@@ -119,21 +120,31 @@ ${EXTRACTED_TEXT_INSTRUCTION}
 ${THREAD_IMAGE_RULE_EXPLAIN}`;
 }
 
-function buildReplyPrompt(text: string, excludeTones: string[]): string {
+function buildReplyPrompt(text: string, tones: string[]): string {
   const base = `You are drafting reply options to a message someone received.
 ${messageBlock(text)}
 
 First identify the single dominant tone of the ORIGINAL message (one of: ${TONES.join(", ")}), a confidence
 score 0-100, and the exact quoted phrase from the original message that best reveals that tone.`;
 
-  const repliesInstruction = excludeTones.length > 0
-    ? `Then draft exactly 5 NEW ready-to-send reply options, each in a DIFFERENT tone than these already-shown ` +
-      `tones: ${excludeTones.join(", ")}. Pick 5 varied, distinct tones from: ${TONES.join(", ")} (excluding the ` +
-      `ones already shown) that would be interesting alternative ways to respond.`
-    : `Then draft exactly 5 ready-to-send reply options: one Professional, one Assertive, one Friendly, one ` +
-      `Diplomatic, and one Empathetic.`;
+  const repliesInstruction =
+    `Then draft exactly ${tones.length} ready-to-send reply options, one for EACH of the following tones ` +
+    `(in this exact order, one entry per tone, no duplicates, no omissions): ${tones.join(", ")}.`;
 
   return `${base}\n${repliesInstruction}\n\n${EXTRACTED_TEXT_INSTRUCTION}\n\n${THREAD_IMAGE_RULE_REPLY}`;
+}
+
+// Used for on-demand "generate just this one tone" taps after the initial
+// batch - the client already has the plain-text message from that earlier
+// call, so this skips re-analyzing the original tone and just drafts the
+// one new reply, same lightweight shape as buildTweakPrompt.
+function buildReplyForTonePrompt(text: string, tone: string): string {
+  return `You are drafting a reply to a message someone received.
+Message: """${text}"""
+
+Draft exactly one ready-to-send reply option in a ${tone} tone that responds to this message.
+
+Return only the reply text - no preamble, no quotes, no explanation.`;
 }
 
 function buildTweakPrompt(replyText: string, tone: string, instruction: string): string {
@@ -144,6 +155,18 @@ ${instruction}
 
 Rewrite the reply accordingly. Keep it a complete, ready-to-send message addressing the same point as the
 original reply. Return only the rewritten reply text.`;
+}
+
+// Appended to the "reply" and "replyForTone" prompts when the client sent a
+// concrete target language. "Auto-detect" (or no value at all) means match
+// whatever language the original message is already in, which is what the
+// model does by default anyway, so it needs no extra instruction.
+function languageDirective(targetLanguage: unknown): string {
+  if (typeof targetLanguage !== "string" || targetLanguage.length === 0 || targetLanguage === "Auto-detect") {
+    return "";
+  }
+  return ` You MUST write the generated reply strictly in ${targetLanguage}, regardless of the language of ` +
+    `the original incoming text.`;
 }
 
 Deno.serve(async (req) => {
@@ -157,18 +180,19 @@ Deno.serve(async (req) => {
       throw new Error("Missing GEMINI_API_KEY secret");
     }
 
-    const { mode, text, images, excludeTones, tone, instruction } = await req.json();
-    if (mode !== "explain" && mode !== "reply" && mode !== "tweak") {
-      throw new Error("mode must be 'explain', 'reply', or 'tweak'");
+    const { mode, text, images, tones, tone, instruction, targetLanguage } = await req.json();
+    if (mode !== "explain" && mode !== "reply" && mode !== "replyForTone" && mode !== "tweak") {
+      throw new Error("mode must be 'explain', 'reply', 'replyForTone', or 'tweak'");
     }
 
     const messageText = typeof text === "string" ? text : "";
     const imageList = (images ?? []) as string[];
+    const noImageModes = mode === "tweak" || mode === "replyForTone";
 
-    if (mode === "tweak" && messageText.trim().length === 0) {
-      throw new Error("text is required for tweak mode");
+    if (noImageModes && messageText.trim().length === 0) {
+      throw new Error(`text is required for ${mode} mode`);
     }
-    if (mode !== "tweak" && messageText.trim().length === 0 && imageList.length === 0) {
+    if (!noImageModes && messageText.trim().length === 0 && imageList.length === 0) {
       throw new Error("Provide text or at least one image");
     }
 
@@ -180,10 +204,23 @@ Deno.serve(async (req) => {
         promptText = buildExplainPrompt(messageText);
         schema = explainSchema;
         break;
-      case "reply":
-        promptText = buildReplyPrompt(messageText, (excludeTones ?? []) as string[]);
+      case "reply": {
+        const toneList = (tones ?? []) as string[];
+        if (toneList.length === 0) {
+          throw new Error("tones is required and must be non-empty for reply mode");
+        }
+        promptText = buildReplyPrompt(messageText, toneList) + languageDirective(targetLanguage);
         schema = replySchema;
         break;
+      }
+      case "replyForTone": {
+        if (!tone || typeof tone !== "string") {
+          throw new Error("tone is required for replyForTone mode");
+        }
+        promptText = buildReplyForTonePrompt(messageText, tone) + languageDirective(targetLanguage);
+        schema = tweakSchema;
+        break;
+      }
       case "tweak": {
         if (!tone || typeof tone !== "string" || !instruction || typeof instruction !== "string") {
           throw new Error("tone and instruction are required for tweak mode");
@@ -195,7 +232,7 @@ Deno.serve(async (req) => {
     }
 
     const parts: Record<string, unknown>[] = [{ text: promptText }];
-    if (mode !== "tweak") {
+    if (!noImageModes) {
       for (const base64 of imageList) {
         parts.push({ inline_data: { mime_type: "image/jpeg", data: base64 } });
       }

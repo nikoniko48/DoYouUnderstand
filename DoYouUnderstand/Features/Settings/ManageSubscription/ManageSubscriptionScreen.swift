@@ -26,6 +26,27 @@ struct ManageSubscriptionScreen: View {
             )
         }
         .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.actions.onTapBack?()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                }
+                .accessibilityIdentifier("backButton")
+            }
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: .space2) {
+                    Text("SETTINGS")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Text("Subscription")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(Colors.Text.title)
+                }
+            }
+        }
     }
 }
 
@@ -39,38 +60,6 @@ extension ManageSubscriptionScreen {
         var body: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: .space24) {
-
-                    // MARK: - Header
-                    HStack(spacing: .space16) {
-                        Button {
-                            actions.onTapBack?()
-                        } label: {
-                            Image(systemName: "arrow.left")
-                                .font(Typography.bodyText)
-                                .scaleEffect(1.2)
-                                .foregroundStyle(Colors.Text.highlight)
-                                .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(Circle())
-                                .overlay(
-                                    Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
-                        }
-                        .accessibilityIdentifier("backButton")
-
-                        VStack(alignment: .leading, spacing: .space2) {
-                            Text("SETTINGS")
-                                .font(Typography.badgeLabel)
-                                .foregroundStyle(Colors.Text.muted)
-
-                            Text("Subscription")
-                                .font(Typography.screenTitle)
-                                .foregroundStyle(Colors.Text.title)
-                        }
-
-                        Spacer()
-                    }
-                    .onboardingReveal(delay: 0)
 
                     // MARK: - Status card
                     HStack(spacing: .space16) {
@@ -86,7 +75,7 @@ extension ManageSubscriptionScreen {
 
                         VStack(alignment: .leading, spacing: .space4) {
                             HStack(spacing: .space6) {
-                                Text(stateModel.isProUnlocked ? "Pro Member" : "Free Plan")
+                                Text(stateModel.isProUnlocked ? LocalizedStringKey("Pro Member") : LocalizedStringKey("Free Plan"))
                                     .font(Typography.biggerText)
                                     .foregroundStyle(Colors.Text.title)
 
@@ -160,15 +149,17 @@ extension ManageSubscriptionScreen {
                                     ProgressView()
                                         .tint(Colors.Main.accent.contrastingForeground)
                                 }
-                                Text(stateModel.isPurchasing ? "Processing..." : "Subscribe")
+                                Text(stateModel.isPurchasing ? LocalizedStringKey("Processing...") : LocalizedStringKey("Subscribe"))
                             }
                             .font(Typography.primaryButton)
                             .foregroundStyle(Colors.Main.accent.contrastingForeground)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, .space16)
-                            .background(Colors.Main.accent)
-                            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
                         }
+                        .buttonStyle(
+                            LiquidGlassCTAButtonStyle(
+                                tint: Colors.Main.accent,
+                                verticalPadding: .space16
+                            )
+                        )
                         .disabled(stateModel.isPurchasing)
                         .onboardingReveal(delay: 0.18)
                     }
@@ -181,7 +172,7 @@ extension ManageSubscriptionScreen {
                                 ProgressView()
                                     .tint(Colors.Text.muted)
                             }
-                            Text(stateModel.isRestoring ? "Restoring..." : "Restore Purchases")
+                            Text(stateModel.isRestoring ? LocalizedStringKey("Restoring...") : LocalizedStringKey("Restore Purchases"))
                         }
                         .font(Typography.bodyText.weight(.bold))
                         .foregroundStyle(Colors.Text.muted)
@@ -196,6 +187,10 @@ extension ManageSubscriptionScreen {
                 .padding(.top, .space16)
                 .padding(.bottom, .space24)
             }
+            // Same fix as onboarding's Theme step - the vertical
+            // ScrollView's default edge clipping sliced the selected
+            // pricing row's border on the sides.
+            .scrollClipDisabled()
             .onAppear {
                 actions.onAppear?()
             }
@@ -210,7 +205,7 @@ extension ManageSubscriptionScreen {
             ) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(stateModel.purchaseErrorMessage ?? "")
+                Text(LocalizedStringKey(stateModel.purchaseErrorMessage ?? ""))
             }
             .alert(
                 "Restore Purchases",
@@ -223,7 +218,7 @@ extension ManageSubscriptionScreen {
             ) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(stateModel.restoreResultMessage ?? "")
+                Text(LocalizedStringKey(stateModel.restoreResultMessage ?? ""))
             }
         }
     }

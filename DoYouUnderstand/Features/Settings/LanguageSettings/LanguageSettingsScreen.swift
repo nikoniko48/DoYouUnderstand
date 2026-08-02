@@ -26,6 +26,27 @@ struct LanguageSettingsScreen: View {
             )
         }
         .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.actions.onTapBack?()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                }
+                .accessibilityIdentifier("backButton")
+            }
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: .space2) {
+                    Text("SETTINGS")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Text("Language")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(Colors.Text.title)
+                }
+            }
+        }
     }
 }
 
@@ -40,44 +61,12 @@ extension LanguageSettingsScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: .space24) {
 
-                    // MARK: - Header
-                    HStack(spacing: .space16) {
-                        Button {
-                            actions.onTapBack?()
-                        } label: {
-                            Image(systemName: "arrow.left")
-                                .font(Typography.bodyText)
-                                .scaleEffect(1.2)
-                                .foregroundStyle(Colors.Text.highlight)
-                                .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(Circle())
-                                .overlay(
-                                    Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
-                        }
-                        .accessibilityIdentifier("backButton")
-
-                        VStack(alignment: .leading, spacing: .space2) {
-                            Text("SETTINGS")
-                                .font(Typography.badgeLabel)
-                                .foregroundStyle(Colors.Text.muted)
-
-                            Text("Language")
-                                .font(Typography.screenTitle)
-                                .foregroundStyle(Colors.Text.title)
-                        }
-
-                        Spacer()
-                    }
-                    .onboardingReveal(delay: 0)
-
                     HStack(alignment: .top, spacing: .space12) {
-                        Image(systemName: "hourglass")
+                        Image(systemName: "globe")
                             .font(Typography.bodyText)
                             .foregroundStyle(Colors.Main.secondaryAccent)
 
-                        Text("Translations are coming soon. Your pick is saved, but the app will keep showing English until this ships.")
+                        Text("English, Polish, and Spanish are fully translated. Other languages will keep showing English until they're added.")
                             .font(Typography.bodyText)
                             .foregroundStyle(Colors.Text.muted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -102,6 +91,32 @@ extension LanguageSettingsScreen {
                             .onboardingReveal(delay: 0.16 + Double(index) * 0.05)
                         }
                     }
+
+                    VStack(alignment: .leading, spacing: .space16) {
+                        VStack(alignment: .leading, spacing: .space4) {
+                            Text("Default Reply Language")
+                                .font(Typography.screenTitle)
+                                .foregroundStyle(Colors.Text.title)
+
+                            Text("Applies to newly generated replies. \"Auto-detect\" matches the language of the message you paste in.")
+                                .font(Typography.bodyText)
+                                .foregroundStyle(Colors.Text.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        VStack(spacing: .space12) {
+                            ForEach(Array(ReplyLanguage.allCases.enumerated()), id: \.element.id) { index, language in
+                                ReplyLanguageRow(
+                                    language: language,
+                                    isSelected: stateModel.selectedReplyLanguage == language
+                                ) {
+                                    actions.onSelectReplyLanguage?(language)
+                                }
+                                .onboardingReveal(delay: 0.4 + Double(index) * 0.05)
+                            }
+                        }
+                    }
+                    .onboardingReveal(delay: 0.36)
                 }
                 .padding(.horizontal, StaticData.Layout.screenPadding)
                 .padding(.top, .space16)
@@ -140,6 +155,42 @@ extension LanguageSettingsScreen {
                 }
                 .padding(.space16)
                 .frame(maxWidth: .infinity, minHeight: 64)
+                .background(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.cardSurface)
+                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                        .stroke(
+                            isSelected ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle,
+                            lineWidth: isSelected ? 2 : 1
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    struct ReplyLanguageRow: View {
+
+        let language: ReplyLanguage
+        let isSelected: Bool
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                HStack(spacing: .space16) {
+                    Text(language.title)
+                        .font(Theme.Typography.onboardingBody.weight(.bold))
+                        .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Text.title)
+
+                    Spacer(minLength: .space8)
+
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Theme.Colors.Main.background)
+                        .opacity(isSelected ? 1 : 0)
+                }
+                .padding(.space16)
+                .frame(maxWidth: .infinity, minHeight: 56)
                 .background(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.cardSurface)
                 .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
                 .overlay(

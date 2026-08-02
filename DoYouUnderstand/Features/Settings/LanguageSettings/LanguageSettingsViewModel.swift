@@ -16,13 +16,12 @@ final class LanguageSettingsViewModel: StateViewModelProtocol {
     private(set) var actions: Actions = .init()
     private let output: (Output) -> Void
 
-    private static let storageKey = "selectedLanguage"
-
     init(output: @escaping (Output) -> Void) {
         self.output = output
-        let stored = UserDefaults.standard.string(forKey: Self.storageKey)
-            .flatMap(LanguageChoice.init(rawValue:)) ?? .english
-        self.stateModel = StateModel(selectedLanguage: stored)
+        self.stateModel = StateModel(
+            selectedLanguage: LocalizationManager.shared.currentLanguage,
+            selectedReplyLanguage: ReplyLanguagePreferenceStore.shared.defaultReplyLanguage
+        )
         setActions()
         self.state = .loaded(stateModel)
     }
@@ -43,6 +42,7 @@ extension LanguageSettingsViewModel {
 
     struct Actions {
         var onSelectLanguage: ((LanguageChoice) -> Void)?
+        var onSelectReplyLanguage: ((ReplyLanguage) -> Void)?
         var onTapBack: (() -> Void)?
     }
 
@@ -50,6 +50,10 @@ extension LanguageSettingsViewModel {
 
         actions.onSelectLanguage = { [weak self] language in
             self?.selectLanguage(language)
+        }
+
+        actions.onSelectReplyLanguage = { [weak self] language in
+            self?.selectReplyLanguage(language)
         }
 
         actions.onTapBack = { [weak self] in
@@ -66,6 +70,13 @@ extension LanguageSettingsViewModel {
         withAnimation(.easeInOut(duration: 0.2)) {
             stateModel.selectedLanguage = language
         }
-        UserDefaults.standard.set(language.rawValue, forKey: Self.storageKey)
+        LocalizationManager.shared.currentLanguage = language
+    }
+
+    private func selectReplyLanguage(_ language: ReplyLanguage) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            stateModel.selectedReplyLanguage = language
+        }
+        ReplyLanguagePreferenceStore.shared.defaultReplyLanguage = language
     }
 }

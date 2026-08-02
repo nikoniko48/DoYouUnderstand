@@ -29,6 +29,27 @@ struct SettingsScreen: View {
             )
         }
         .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.actions.onTapBack?()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                }
+                .accessibilityIdentifier("backButton")
+            }
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: .space2) {
+                    Text("SETTINGS")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Text("Preferences")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(Colors.Text.title)
+                }
+            }
+        }
     }
 }
 
@@ -43,38 +64,6 @@ extension SettingsScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: .space24) {
 
-                    // MARK: - Header
-                    HStack(spacing: .space16) {
-                        Button {
-                            actions.onTapBack?()
-                        } label: {
-                            Image(systemName: "arrow.left")
-                                .font(Typography.bodyText)
-                                .scaleEffect(1.2)
-                                .foregroundStyle(Colors.Text.highlight)
-                                .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(Circle())
-                                .overlay(
-                                    Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
-                        }
-                        .accessibilityIdentifier("backButton")
-
-                        VStack(alignment: .leading, spacing: .space2) {
-                            Text("SETTINGS")
-                                .font(Typography.badgeLabel)
-                                .foregroundStyle(Colors.Text.muted)
-
-                            Text("Preferences")
-                                .font(Typography.screenTitle)
-                                .foregroundStyle(Colors.Text.title)
-                        }
-
-                        Spacer()
-                    }
-                    .onboardingReveal(delay: 0)
-
                     // MARK: - Profile card
                     Button {
                         actions.onTapProfile?()
@@ -88,7 +77,7 @@ extension SettingsScreen {
                                 .clipShape(Circle())
 
                             VStack(alignment: .leading, spacing: .space2) {
-                                Text(stateModel.hasProfile ? stateModel.name : "Add your name")
+                                Text(stateModel.hasProfile ? stateModel.name : Loc.t("Add your name"))
                                     .font(Typography.biggerText)
                                     .foregroundStyle(Colors.Text.title)
 
@@ -112,6 +101,7 @@ extension SettingsScreen {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("settingsProfileRow")
                     .onboardingReveal(delay: 0.06)
 
                     // MARK: - Settings rows
@@ -212,11 +202,11 @@ extension SettingsScreen {
                         .clipShape(RoundedRectangle(cornerRadius: .space8))
 
                     VStack(alignment: .leading, spacing: .space2) {
-                        Text(title)
+                        Text(LocalizedStringKey(title))
                             .font(Theme.Typography.biggerText)
                             .foregroundStyle(Theme.Colors.Text.title)
 
-                        Text(subtitle)
+                        Text(LocalizedStringKey(subtitle))
                             .font(Theme.Typography.bodyText)
                             .foregroundStyle(Theme.Colors.Text.muted)
                     }

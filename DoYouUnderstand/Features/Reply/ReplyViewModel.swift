@@ -92,7 +92,8 @@ extension ReplyViewModel {
         var onToggleTweak: ((UUID) -> Void)?
         var onRegenerate: ((UUID) -> Void)?
         var onAdjustLength: ((UUID, LengthAdjustment) -> Void)?
-        var onGenerateMoreTones: (() -> Void)?
+        var onGenerateTone: ((Tone) -> Void)?
+        var onChangeLanguage: ((UUID, ReplyLanguage) -> Void)?
     }
 
     private func setActions() {
@@ -128,8 +129,12 @@ extension ReplyViewModel {
             self?.adjustLength(id: id, adjustment: adjustment)
         }
 
-        actions.onGenerateMoreTones = { [weak self] in
-            self?.generateMoreTones()
+        actions.onGenerateTone = { [weak self] tone in
+            self?.generateTone(tone)
+        }
+
+        actions.onChangeLanguage = { [weak self] id, language in
+            self?.changeLanguage(id: id, language: language)
         }
     }
 }
@@ -157,11 +162,14 @@ extension ReplyViewModel {
 
     private func applyPayload(_ payload: Payload) {
         // The user may have submitted an image with no typed text - fall back
-        // to the AI's transcription so both the UI and any follow-up request
-        // (e.g. Generate More Tones) always have real text to work with.
+        // to the AI's transcription so the UI always has real text to show.
         stateModel.originalMessage = payload.originalMessage.isEmpty ? payload.extractedText : payload.originalMessage
         stateModel.originalTone = .init(tone: payload.tone, score: payload.toneScore, quote: payload.toneQuote)
-        stateModel.options = payload.replies.map { StateModel.ReplyOption(tone: $0.tone, text: $0.text) }
+        stateModel.options = payload.replies.map { entry in
+            var option = StateModel.ReplyOption(tone: entry.tone, text: entry.text)
+            option.activeLanguage = ReplyLanguage.detected(from: entry.text)
+            return option
+        }
         state = .loaded(stateModel)
     }
 
@@ -262,8 +270,46 @@ extension ReplyViewModel {
         return "Shift this reply \(percent)% towards \(label)."
     }
 
-    private func generateMoreTones() {
-        guard !stateModel.isGeneratingMoreTones, !stateModel.hasAllTones else { return }
+    /// The Tweak panel's `[ PL | EN ]` toggle - flips just this one card's
+    /// active language and regenerates its text to match, keeping the same
+    /// tone. Session-only: it never touches `ReplyLanguagePreferenceStore`,
+    /// so the global Settings default is untouched.
+    private func changeLanguage(id: UUID, language: ReplyLanguage) {
+        guard let index = stateModel.options.firstIndex(where: { $0.id == id }) else { return }
+        guard stateModel.options[index].activeLanguage != language else { return }
+        guard !stateModel.options[index].isRegenerating else { return }
+
+        guard !UsageLimiter.isAtDailyLimit else {
+            stateModel.limitReachedMessage = UsageLimiter.limitReachedMessage
+            return
+        }
+
+        let tone = stateModel.options[index].tone
+        let text = stateModel.originalMessage
+        stateModel.options[index].activeLanguage = language
+        stateModel.options[index].isRegenerating = true
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let newText = try await GeminiService.replyForTone(text: text, tone: tone, targetLanguage: language)
+                UsageLimiter.recordUsage()
+                if let idx = self.stateModel.options.firstIndex(where: { $0.id == id }) {
+                    self.stateModel.options[idx].text = newText
+                    self.stateModel.options[idx].isRegenerating = false
+                }
+            } catch {
+                if let idx = self.stateModel.options.firstIndex(where: { $0.id == id }) {
+                    self.stateModel.options[idx].isRegenerating = false
+                }
+                self.stateModel.errorMessage = "Couldn't switch that reply's language. Please try again."
+            }
+        }
+    }
+
+    private func generateTone(_ tone: Tone) {
+        guard !stateModel.pendingTones.contains(tone) else { return }
+        guard !stateModel.options.contains(where: { $0.tone == tone }) else { return }
 
         guard !UsageLimiter.isAtDailyLimit else {
             stateModel.limitReachedMessage = UsageLimiter.limitReachedMessage
@@ -271,37 +317,25 @@ extension ReplyViewModel {
         }
 
         let text = stateModel.originalMessage
-        let existingTones = stateModel.options.map { $0.tone }
-        stateModel.isGeneratingMoreTones = true
+        stateModel.pendingTones.append(tone)
 
         Task { [weak self] in
             guard let self else { return }
             do {
-                let payload = try await GeminiService.reply(text: text, images: [], excludeTones: existingTones)
+                let replyText = try await GeminiService.replyForTone(
+                    text: text,
+                    tone: tone,
+                    targetLanguage: ReplyLanguagePreferenceStore.shared.defaultReplyLanguage
+                )
                 UsageLimiter.recordUsage()
-                // The model occasionally repeats a tone we already have -
-                // drop those rather than let a duplicate tile silently
-                // appear (and rather than fail the whole request over it).
-                let existingSet = Set(existingTones)
-                let newOptions = payload.replies
-                    .filter { !existingSet.contains($0.tone) }
-                    .map { StateModel.ReplyOption(tone: $0.tone, text: $0.text) }
-
-                if newOptions.isEmpty {
-                    // Every tone the model returned was one we already have -
-                    // from the user's side this would otherwise look like
-                    // the tap silently did nothing, so treat it the same as
-                    // a failure rather than succeeding with zero new tiles.
-                    self.stateModel.errorMessage = "Couldn't generate more tones that time. Please try again."
-                } else {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        self.stateModel.options.append(contentsOf: newOptions)
-                    }
-                }
+                self.stateModel.pendingTones.removeAll { $0 == tone }
+                var newOption = StateModel.ReplyOption(tone: tone, text: replyText)
+                newOption.activeLanguage = ReplyLanguage.detected(from: replyText)
+                self.stateModel.options.insert(newOption, at: 0)
             } catch {
-                self.stateModel.errorMessage = "Couldn't generate more tones. Please try again."
+                self.stateModel.pendingTones.removeAll { $0 == tone }
+                self.stateModel.errorMessage = "Couldn't generate that tone. Please try again."
             }
-            self.stateModel.isGeneratingMoreTones = false
         }
     }
 }

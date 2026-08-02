@@ -14,13 +14,17 @@ extension ReplyViewModel {
         var originalMessage: String = ""
         var originalTone: ToneAnalysis?
         var options: [ReplyOption] = []
-        var isGeneratingMoreTones: Bool = false
+        /// Tones currently being generated on-demand (a pill tap) - rendered
+        /// as skeleton cards above `options` until each one resolves.
+        var pendingTones: [Tone] = []
         var limitReachedMessage: String?
         var errorMessage: String?
 
-        /// All 15 tones are already showing - there's nothing left to generate.
-        var hasAllTones: Bool {
-            options.count >= Tone.allCases.count
+        /// Every tone not yet generated and not currently generating - these
+        /// are the tones still offered as "generate this tone" pills.
+        var availableTones: [Tone] {
+            let usedTones = Set(options.map(\.tone)).union(pendingTones)
+            return Tone.allCases.filter { !usedTones.contains($0) }
         }
 
         init(originalTone: ToneAnalysis? = nil, options: [ReplyOption] = []) {
@@ -38,10 +42,15 @@ extension ReplyViewModel.StateModel {
         let quote: String
     }
 
-    struct ReplyOption: Identifiable {
+    struct ReplyOption: Identifiable, Equatable {
         let id = UUID()
         let tone: Tone
         var text: String
+        /// The language this card is currently in. Defaults to whatever the
+        /// global Settings preference is at the moment the card is created;
+        /// the Tweak panel's language toggle can override it for this one
+        /// card, for this session only - it never writes back to Settings.
+        var activeLanguage: ReplyLanguage = ReplyLanguagePreferenceStore.shared.defaultReplyLanguage
 
         var draftText: String = ""
         var isEditing: Bool = false

@@ -26,6 +26,27 @@ struct ProfileScreen: View {
             )
         }
         .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.actions.onTapBack?()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                }
+                .accessibilityIdentifier("backButton")
+            }
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: .space2) {
+                    Text("SETTINGS")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Text("Your Profile")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(Colors.Text.title)
+                }
+            }
+        }
     }
 }
 
@@ -48,37 +69,11 @@ extension ProfileScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: .space24) {
 
-                    // MARK: - Header
-                    HStack(spacing: .space16) {
-                        Button {
-                            actions.onTapBack?()
-                        } label: {
-                            Image(systemName: "arrow.left")
-                                .font(Typography.bodyText)
-                                .scaleEffect(1.2)
-                                .foregroundStyle(Colors.Text.highlight)
-                                .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(Circle())
-                                .overlay(
-                                    Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
-                        }
-                        .accessibilityIdentifier("backButton")
+                    // MARK: - Saved confirmation
+                    if stateModel.showsSavedConfirmation {
+                        HStack(spacing: .space16) {
+                            Spacer(minLength: .space0)
 
-                        VStack(alignment: .leading, spacing: .space2) {
-                            Text("SETTINGS")
-                                .font(Typography.badgeLabel)
-                                .foregroundStyle(Colors.Text.muted)
-
-                            Text("Your Profile")
-                                .font(Typography.screenTitle)
-                                .foregroundStyle(Colors.Text.title)
-                        }
-
-                        Spacer()
-
-                        if stateModel.showsSavedConfirmation {
                             HStack(spacing: .space6) {
                                 Image(systemName: "checkmark.circle.fill")
                                 Text("Saved")
@@ -198,7 +193,7 @@ extension ProfileScreen {
                                 HStack(spacing: .space12) {
                                     ForEach(row) { gender in
                                         OnboardingScreen.GenderOptionChip(
-                                            title: gender.rawValue,
+                                            title: gender.displayName,
                                             isSelected: stateModel.selectedGender == gender
                                         ) {
                                             actions.onSelectGender?(gender)
@@ -214,6 +209,10 @@ extension ProfileScreen {
                 .padding(.top, .space16)
                 .padding(.bottom, .space24)
             }
+            // Same fix as onboarding's Age step - the vertical ScrollView's
+            // default edge clipping sliced the selected gender chip's
+            // border on the sides.
+            .scrollClipDisabled()
             .safeAreaInset(edge: .bottom) {
                 if stateModel.hasUnsavedChanges {
                     HStack(spacing: .space12) {
@@ -224,15 +223,13 @@ extension ProfileScreen {
                             Text("Cancel")
                                 .font(Typography.primaryButton)
                                 .foregroundStyle(Colors.Text.title)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, .space16)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                        .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
                         }
+                        .buttonStyle(
+                            LiquidGlassCTAButtonStyle(
+                                tint: Colors.Main.cardSurface,
+                                verticalPadding: .space16
+                            )
+                        )
 
                         Button {
                             isNameFieldFocused = false
@@ -241,11 +238,13 @@ extension ProfileScreen {
                             Text("Save Changes")
                                 .font(Typography.primaryButton)
                                 .foregroundStyle(Colors.Main.accent.contrastingForeground)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, .space16)
-                                .background(Colors.Main.accent)
-                                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
                         }
+                        .buttonStyle(
+                            LiquidGlassCTAButtonStyle(
+                                tint: Colors.Main.accent,
+                                verticalPadding: .space16
+                            )
+                        )
                         .disabled(!stateModel.isNameValid)
                         .opacity(stateModel.isNameValid ? 1 : 0.5)
                     }

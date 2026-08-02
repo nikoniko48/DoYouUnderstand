@@ -79,6 +79,7 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(ThemeManager.shared.appTheme.colorScheme)
+        .environment(\.locale, LocalizationManager.shared.locale)
     }
 }
 

@@ -30,6 +30,27 @@ struct ExplanationScreen: View {
             )
         }
         .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.actions.onTapBack?()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                }
+                .accessibilityIdentifier("backButton")
+            }
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: .space2) {
+                    Text("TONE ANALYSIS")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Text("Here's the truth")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(Colors.Text.title)
+                }
+            }
+        }
     }
 }
 
@@ -47,36 +68,6 @@ extension ExplanationScreen {
                 ZStack(alignment: .bottom) {
                     ScrollView {
                         VStack(spacing: .space24) {
-                            
-                            // MARK: - Header
-                            HStack(spacing: .space16) {
-                                Button {
-                                    actions.onTapBack?()
-                                } label: {
-                                    Image(systemName: "arrow.left")
-                                        .font(Typography.bodyText)
-                                        .scaleEffect(1.2)
-                                        .foregroundStyle(Colors.Text.highlight)
-                                        .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                                        .background(Colors.Main.cardSurface)
-                                        .clipShape(Circle())
-                                        .overlay(
-                                            Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                        )
-                                }
-                                
-                                VStack(alignment: .leading, spacing: .space2) {
-                                    Text("TONE ANALYSIS")
-                                        .font(Typography.badgeLabel)
-                                        .foregroundStyle(Colors.Text.muted)
-
-                                    Text("Here's the truth")
-                                        .font(Typography.screenTitle)
-                                        .foregroundStyle(Colors.Text.title)
-                                }
-                                Spacer()
-                            }
-                            .onboardingReveal(delay: 0)
 
                             // MARK: - Original Message Card
                             VStack(alignment: .leading, spacing: .space12) {
@@ -102,7 +93,7 @@ extension ExplanationScreen {
                             // MARK: - Tone Progress Bar
                             if let toneAnalysis = stateModel.originalTone {
                                 HStack(spacing: .space12) {
-                                    Text(toneAnalysis.tone.rawValue.uppercased())
+                                    Text(toneAnalysis.tone.displayName.uppercased())
                                         .font(Typography.badgeLabel)
                                         .foregroundStyle(toneAnalysis.tone.color)
                                         .padding(.horizontal, .space12)
@@ -144,7 +135,7 @@ extension ExplanationScreen {
                                             BreakdownTile(
                                                 icon: "info.circle.fill",
                                                 iconTint: toneAnalysis.tone.color,
-                                                title: "WHAT DOES \(toneAnalysis.tone.rawValue.uppercased()) MEAN?",
+                                                title: String(format: Loc.t("WHAT DOES %@ MEAN?"), toneAnalysis.tone.displayName.uppercased()),
                                                 content: toneAnalysis.tone.definition
                                             )
                                             .onboardingReveal(delay: 0.26)
@@ -201,14 +192,15 @@ extension ExplanationScreen {
                         Button {
                             actions.onTapMainAction?()
                         } label: {
-                            Text(stateModel.interactionStep == 0 ? "YEA!" : "GOT IT!")
+                            Text(stateModel.interactionStep == 0 ? LocalizedStringKey("YEA!") : LocalizedStringKey("GOT IT!"))
                                 .font(Typography.primaryButton)
                                 .foregroundStyle(Colors.Main.accent.contrastingForeground)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 18)
-                                .background(Colors.Main.accent)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
+                        .buttonStyle(
+                            LiquidGlassCTAButtonStyle(
+                                tint: Colors.Main.accent
+                            )
+                        )
                     }
                     .padding(.horizontal, StaticData.Layout.screenPadding)
                     .padding(.top, .space12)
@@ -259,7 +251,7 @@ extension ExplanationScreen {
                     .clipShape(RoundedRectangle(cornerRadius: .space8))
 
                 VStack(alignment: .leading, spacing: .space8) {
-                    Text(title)
+                    Text(LocalizedStringKey(title))
                         .font(Theme.Typography.badgeLabel)
                         .foregroundStyle(Theme.Colors.Text.muted)
 

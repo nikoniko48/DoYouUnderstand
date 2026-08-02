@@ -31,6 +31,27 @@ struct ThemeSettingsScreen: View {
             )
         }
         .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.actions.onTapBack?()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                }
+                .accessibilityIdentifier("backButton")
+            }
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: .space2) {
+                    Text("SETTINGS")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Text("Appearance")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(Colors.Text.title)
+                }
+            }
+        }
     }
 }
 
@@ -44,37 +65,6 @@ extension ThemeSettingsScreen {
         var body: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: .space32) {
-
-                    // MARK: - Header
-                    HStack(spacing: .space16) {
-                        Button {
-                            actions.onTapBack?()
-                        } label: {
-                            Image(systemName: "arrow.left")
-                                .font(Typography.bodyText)
-                                .scaleEffect(1.2)
-                                .foregroundStyle(Colors.Text.highlight)
-                                .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(Circle())
-                                .overlay(
-                                    Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
-                        }
-                        .accessibilityIdentifier("backButton")
-
-                        VStack(alignment: .leading, spacing: .space2) {
-                            Text("SETTINGS")
-                                .font(Typography.badgeLabel)
-                                .foregroundStyle(Colors.Text.muted)
-
-                            Text("Appearance")
-                                .font(Typography.screenTitle)
-                                .foregroundStyle(Colors.Text.title)
-                        }
-
-                        Spacer()
-                    }
 
                     VStack(alignment: .leading, spacing: .space16) {
                         Text("App theme")
@@ -100,7 +90,7 @@ extension ThemeSettingsScreen {
                             .font(Typography.hugeTitle)
                             .foregroundStyle(Colors.Text.title)
 
-                        Text("Colors the 15 message tones - independent of your app theme.")
+                        Text("Colors the 16 message tones - independent of your app theme.")
                             .font(Typography.bodyText)
                             .foregroundStyle(Colors.Text.muted)
                             .fixedSize(horizontal: false, vertical: true)

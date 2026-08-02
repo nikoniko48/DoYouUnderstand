@@ -50,6 +50,7 @@ enum Theme {
             static var flirty: Color { color(for: .flirty) }
             static var diplomatic: Color { color(for: .diplomatic) }
             static var dismissive: Color { color(for: .dismissive) }
+            static var savage: Color { color(for: .savage) }
 
             // Explicitly module-qualified - inside this `Tone` namespace,
             // the bare name `Tone` would otherwise resolve to itself

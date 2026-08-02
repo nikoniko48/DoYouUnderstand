@@ -21,17 +21,17 @@ enum AppThemeChoice: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .light: return "Light"
-        case .dark: return "Dark"
-        case .terminal: return "Terminal"
+        case .light: return Loc.t("Light")
+        case .dark: return Loc.t("Dark")
+        case .terminal: return Loc.t("Terminal")
         }
     }
 
     var subtitle: String {
         switch self {
-        case .light: return "Clean and bright"
-        case .dark: return "Easy on the eyes"
-        case .terminal: return "High-contrast hacker mode"
+        case .light: return Loc.t("Clean and bright")
+        case .dark: return Loc.t("Easy on the eyes")
+        case .terminal: return Loc.t("High-contrast hacker mode")
         }
     }
 

@@ -42,7 +42,7 @@ struct StateScreen<StateModel, Content: View>: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(Theme.Typography.hugeTitle)
                         .foregroundStyle(Theme.Colors.Text.title)
-                    Text(message)
+                    Text(LocalizedStringKey(message))
                         .font(Theme.Typography.bodyText)
                         .foregroundStyle(Theme.Colors.Text.muted)
                 }

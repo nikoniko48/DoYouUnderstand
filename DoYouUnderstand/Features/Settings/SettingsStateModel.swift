@@ -29,8 +29,7 @@ extension SettingsViewModel {
         }
 
         static func loadSelectedLanguage() -> LanguageChoice {
-            UserDefaults.standard.string(forKey: "selectedLanguage")
-                .flatMap(LanguageChoice.init(rawValue:)) ?? .english
+            LocalizationManager.shared.currentLanguage
         }
 
         var hasProfile: Bool {
@@ -44,10 +43,10 @@ extension SettingsViewModel {
         }
 
         var profileSubtitle: String {
-            guard hasProfile else { return "Set up your profile" }
-            var parts: [String] = ["Age \(Int(age))"]
+            guard hasProfile else { return Loc.t("Set up your profile") }
+            var parts: [String] = [String(format: Loc.t("Age %d"), Int(age))]
             if let gender {
-                parts.append(gender.rawValue)
+                parts.append(gender.displayName)
             }
             return parts.joined(separator: " · ")
         }

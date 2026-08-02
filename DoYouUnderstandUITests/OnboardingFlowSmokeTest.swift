@@ -7,9 +7,11 @@ final class OnboardingFlowSmokeTest: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        // Step 1 - Greeting
+        // Step 1 - Greeting. The button doesn't even exist until the
+        // ~6.3s "decryption" intro finishes playing, so this needs a
+        // longer timeout than the rest of the funnel's steps.
         let getStartedButton = app.buttons["Get Started"]
-        XCTAssertTrue(getStartedButton.waitForExistence(timeout: 2))
+        XCTAssertTrue(getStartedButton.waitForExistence(timeout: 9))
         getStartedButton.tap()
 
         // Step 2 - Name
@@ -91,13 +93,35 @@ final class OnboardingFlowSmokeTest: XCTestCase {
         XCTAssertTrue(privacyTitle.waitForExistence(timeout: 2))
         app.buttons["Continue"].tap()
 
-        // Step 11 - Paywall
-        let trialButton = app.buttons["START FREE TRIAL"]
-        XCTAssertTrue(trialButton.waitForExistence(timeout: 2))
+        // Step 11 - Interactive tone demo
+        let toneDemoTitle = app.staticTexts["Control any conversation."]
+        XCTAssertTrue(toneDemoTitle.waitForExistence(timeout: 2))
+        let savagePill = app.buttons["Savage"]
+        XCTAssertTrue(savagePill.waitForExistence(timeout: 2))
+        savagePill.tap()
+        XCTAssertTrue(app.staticTexts["Perfect. I'll do it my way then."].waitForExistence(timeout: 2))
+        let toneDemoScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        toneDemoScreenshot.lifetime = .keepAlways
+        toneDemoScreenshot.name = "OnboardingToneDemo"
+        add(toneDemoScreenshot)
+        app.buttons["Continue"].tap()
+
+        // Step 12 - Paywall, step 1: marketing screen
+        let claimTrialButton = app.buttons["Claim My 3-Day Free Trial"]
+        XCTAssertTrue(claimTrialButton.waitForExistence(timeout: 2))
         let paywallScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         paywallScreenshot.lifetime = .keepAlways
-        paywallScreenshot.name = "OnboardingPaywall"
+        paywallScreenshot.name = "OnboardingPaywallMarketing"
         add(paywallScreenshot)
+        claimTrialButton.tap()
+
+        // Step 11 - Paywall, step 2: checkout bottom sheet
+        let trialButton = app.buttons["Start Free Trial"]
+        XCTAssertTrue(trialButton.waitForExistence(timeout: 2))
+        let checkoutScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        checkoutScreenshot.lifetime = .keepAlways
+        checkoutScreenshot.name = "OnboardingPaywallCheckout"
+        add(checkoutScreenshot)
         trialButton.tap()
 
         // RevenueCat's test-mode API key swaps the real StoreKit sheet for its
@@ -116,8 +140,12 @@ final class OnboardingFlowSmokeTest: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
+        // This button exists in the hierarchy the whole time but isn't
+        // hittable (`allowsHitTesting(false)`) until the greeting screen's
+        // decryption intro finishes - waiting on existence alone would let
+        // the tap below silently no-op mid-animation.
         let skipButton = app.buttons["Skip Onboarding (Debug)"]
-        XCTAssertTrue(skipButton.waitForExistence(timeout: 2))
+        XCTAssertTrue(waitUntilHittable(skipButton))
         skipButton.tap()
 
         let dashboardTitle = app.staticTexts["DO YOU\nUNDERSTAND?!"]

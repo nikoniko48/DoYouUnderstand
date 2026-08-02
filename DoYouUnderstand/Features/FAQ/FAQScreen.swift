@@ -29,6 +29,27 @@ struct FAQScreen: View {
             )
         }
         .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.actions.onTapBack?()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                }
+                .accessibilityIdentifier("backButton")
+            }
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: .space2) {
+                    Text("SUPPORT")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Text("Frequently Asked Questions")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(Colors.Text.title)
+                }
+            }
+        }
     }
 }
 
@@ -42,37 +63,6 @@ extension FAQScreen {
         var body: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: .space24) {
-
-                    // MARK: - Header
-                    HStack(spacing: .space16) {
-                        Button {
-                            actions.onTapBack?()
-                        } label: {
-                            Image(systemName: "arrow.left")
-                                .font(Typography.bodyText)
-                                .scaleEffect(1.2)
-                                .foregroundStyle(Colors.Text.highlight)
-                                .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(Circle())
-                                .overlay(
-                                    Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
-                        }
-
-                        VStack(alignment: .leading, spacing: .space2) {
-                            Text("SUPPORT")
-                                .font(Typography.badgeLabel)
-                                .foregroundStyle(Colors.Text.muted)
-
-                            Text("Frequently Asked Questions")
-                                .font(Typography.screenTitle)
-                                .foregroundStyle(Colors.Text.title)
-                        }
-
-                        Spacer()
-                    }
-                    .onboardingReveal(delay: 0)
 
                     VStack(spacing: .space12) {
                         ForEach(Array(stateModel.questions.enumerated()), id: \.element.id) { index, item in
@@ -100,7 +90,7 @@ extension FAQScreen {
 
         var body: some View {
             DisclosureGroup(isExpanded: $isExpanded) {
-                Text(item.answer)
+                Text(LocalizedStringKey(item.answer))
                     .font(Theme.Typography.bodyText)
                     .foregroundStyle(Theme.Colors.Text.muted)
                     .lineSpacing(4)
@@ -116,7 +106,7 @@ extension FAQScreen {
                         .background(Theme.Colors.Main.accent.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: .space8))
 
-                    Text(item.question)
+                    Text(LocalizedStringKey(item.question))
                         .font(Theme.Typography.bodyText.weight(.bold))
                         .foregroundStyle(Theme.Colors.Text.title)
                         .frame(maxWidth: .infinity, alignment: .leading)

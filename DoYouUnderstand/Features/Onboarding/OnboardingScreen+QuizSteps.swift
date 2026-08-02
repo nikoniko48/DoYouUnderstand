@@ -92,9 +92,7 @@ extension OnboardingScreen {
             VStack(spacing: .space24) {
                 Spacer(minLength: .space0)
 
-                ProgressView()
-                    .tint(Theme.Colors.Main.accent)
-                    .scaleEffect(1.8)
+                BouncingDotsLoader(color: Theme.Colors.Main.accent, dotSize: 12)
 
                 VStack(spacing: .space8) {
                     Text("Calibrating your communication profile...")
@@ -189,6 +187,7 @@ extension OnboardingScreen {
         @State private var isPressing = false
         @State private var hasCompleted = false
         @State private var driverTask: Task<Void, Never>?
+        @State private var haptics = TactileHoldHapticEngine()
 
         var body: some View {
             GeometryReader { geo in
@@ -239,17 +238,22 @@ extension OnboardingScreen {
             .onDisappear {
                 driverTask?.cancel()
                 driverTask = nil
+                haptics.cancel()
             }
         }
 
         private func beginHold() {
             guard !hasCompleted else { return }
             isPressing = true
+            haptics.touchDown(duration: fillDuration)
             startDriverLoopIfNeeded()
         }
 
         private func endHold() {
             isPressing = false
+            if !hasCompleted {
+                haptics.cancel()
+            }
         }
 
         private func startDriverLoopIfNeeded() {
@@ -265,6 +269,7 @@ extension OnboardingScreen {
 
                     if isPressing {
                         progress = min(1, progress + fillPerTick)
+                        haptics.updateProgress(Double(progress))
                         if progress >= 1 {
                             await confirmCompletion()
                             break
@@ -283,11 +288,7 @@ extension OnboardingScreen {
         @MainActor
         private func confirmCompletion() async {
             hasCompleted = true
-
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-
+            haptics.complete()
             onComplete()
         }
     }

@@ -45,6 +45,9 @@ extension OnboardingScreen {
         // first time onboarding is shown and never resets once it expires.
         @AppStorage("onboardingDiscountExpiresAt") private var discountExpiresAtRaw: Double = 0
         @State private var now: Date = Date()
+        // Drives the paywall's checkout bottom sheet - the marketing step
+        // (Finisher) itself never purchases anything directly anymore.
+        @State private var isShowingCheckout = false
 
         var discountExpiresAt: Date {
             Date(timeIntervalSince1970: discountExpiresAtRaw)
@@ -99,7 +102,27 @@ extension OnboardingScreen {
             ) {
                 Button("OK") { stateModel.purchaseErrorMessage = nil }
             } message: {
-                Text(stateModel.purchaseErrorMessage ?? "")
+                Text(LocalizedStringKey(stateModel.purchaseErrorMessage ?? ""))
+            }
+            .sheet(isPresented: $isShowingCheckout) {
+                OnboardingScreen.CheckoutSheetView(
+                    stateModel: stateModel,
+                    actions: actions,
+                    isDiscountActive: isDiscountActive
+                )
+                .presentationDetents([.fraction(0.62), .large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(StaticData.Layout.cornerRadius)
+                // Without an explicit opaque background here, iOS 26 gives
+                // sheets their own translucent Liquid Glass chrome by
+                // default - which then shows through/behind our own glass
+                // CTA and card overlays as a second, uncoordinated blur
+                // layer (most visible as a mismatched strip below our
+                // content when it doesn't exactly fill the detent height).
+                // A flat, opaque background keeps exactly one glass layer
+                // in the picture: the one on our own components.
+                .presentationBackground(Theme.Colors.Main.background)
+                .interactiveDismissDisabled(stateModel.isPurchasing)
             }
         }
     }
@@ -118,7 +141,7 @@ extension OnboardingScreen.ContentView {
                     currentStep: stateModel.displayStepNumber - 1
                 )
 
-                Text("STEP \(stateModel.displayStepNumber) OF \(stateModel.progressStepCount)")
+                Text(String(format: Loc.t("STEP %d OF %d"), stateModel.displayStepNumber, stateModel.progressStepCount))
                     .font(Theme.Typography.badgeLabel)
                     .foregroundStyle(Theme.Colors.Text.muted)
             }
@@ -134,7 +157,7 @@ extension OnboardingScreen.ContentView {
     private var stepContent: some View {
         switch stateModel.step {
         case .greeting:
-            OnboardingScreen.GreetingStepView(actions: actions)
+            OnboardingScreen.GreetingStepView(stateModel: stateModel, actions: actions)
         case .name:
             OnboardingScreen.NameStepView(stateModel: stateModel, actions: actions)
         case .age:
@@ -153,6 +176,8 @@ extension OnboardingScreen.ContentView {
             OnboardingScreen.TactileHoldStepView(onComplete: { actions.onNext?() })
         case .privacy:
             OnboardingScreen.PrivacyStepView()
+        case .toneDemo:
+            OnboardingScreen.ToneDemoStepView()
         case .finisher:
             OnboardingScreen.FinisherStepView(
                 stateModel: stateModel,
@@ -175,47 +200,26 @@ extension OnboardingScreen.ContentView {
         case .triggerMessage, .processing, .tactileHold:
             EmptyView()
 
+        case .greeting where stateModel.isGreetingIntroPlaying:
+            EmptyView()
+
         case .finisher:
-            VStack(spacing: .space8) {
-                Button {
-                    actions.onStartTrial?()
-                } label: {
-                    Group {
-                        if stateModel.isPurchasing {
-                            ProgressView()
-                                .tint(Theme.Colors.Main.accent.contrastingForeground)
-                        } else {
-                            Text("START FREE TRIAL")
-                        }
-                    }
-                    .font(Theme.Typography.primaryButton)
+            // Step 1 of the paywall (marketing) never purchases directly -
+            // it just hands off to the checkout sheet, which owns pricing,
+            // the real "Start Free Trial" purchase CTA, and all legal copy.
+            Button {
+                isShowingCheckout = true
+            } label: {
+                Text("Claim My 3-Day Free Trial")
+                    .font(Theme.Typography.spaceGrotesk(size: 18, weight: .heavy))
                     .foregroundStyle(Theme.Colors.Main.accent.contrastingForeground)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(Theme.Colors.Main.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                }
-                .disabled(stateModel.isPurchasing)
-
-                // "3 free analyses" was stale copy from the old visible-quota
-                // usage model - that's gone now (see UsageLimiter), so this
-                // no longer overpromises a specific free count.
-                Text("Then \(stateModel.selectedPlan.price(discountActive: isDiscountActive))\(stateModel.selectedPlan.period). Cancel anytime.")
-                    .font(Theme.Typography.smallBody)
-                    .foregroundStyle(Theme.Colors.Text.muted)
-                    .multilineTextAlignment(.center)
-
-                Button {
-                    actions.onRestorePurchases?()
-                } label: {
-                    Text("Restore Purchases")
-                        .font(Theme.Typography.smallBody)
-                        .foregroundStyle(Theme.Colors.Text.muted)
-                        .underline()
-                }
-                .disabled(stateModel.isPurchasing)
-                .padding(.top, .space4)
             }
+            .buttonStyle(
+                LiquidGlassCTAButtonStyle(
+                    tint: Theme.Colors.Main.accent,
+                    verticalPadding: 22
+                )
+            )
 
         default:
             Button {
@@ -224,17 +228,15 @@ extension OnboardingScreen.ContentView {
                 Text(stateModel.step == .greeting ? "Get Started" : "Continue")
                     .font(Theme.Typography.primaryButton)
                     .foregroundStyle(stateModel.isContinueEnabled ? Theme.Colors.Main.accent.contrastingForeground : Theme.Colors.Text.muted)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(
-                        stateModel.isContinueEnabled
-                        ? Theme.Colors.Main.accent
-                        : Theme.Colors.Main.cardSurface
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                    .animation(.easeInOut, value: stateModel.isContinueEnabled)
             }
+            .buttonStyle(
+                LiquidGlassCTAButtonStyle(
+                    tint: stateModel.isContinueEnabled ? Theme.Colors.Main.accent : Theme.Colors.Main.cardSurface,
+                    isInteractive: stateModel.isContinueEnabled
+                )
+            )
             .disabled(!stateModel.isContinueEnabled)
+            .animation(.easeInOut, value: stateModel.isContinueEnabled)
         }
     }
 }

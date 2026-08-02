@@ -22,11 +22,11 @@ enum TonePaletteChoice: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .classic: return "Classic"
-        case .pastel: return "Pastel"
-        case .neon: return "Neon"
-        case .mono: return "Mono"
-        case .terminal: return "Terminal"
+        case .classic: return Loc.t("Classic")
+        case .pastel: return Loc.t("Pastel")
+        case .neon: return Loc.t("Neon")
+        case .mono: return Loc.t("Mono")
+        case .terminal: return Loc.t("Terminal")
         }
     }
 
@@ -36,7 +36,7 @@ enum TonePaletteChoice: String, CaseIterable, Identifiable {
     }
 
     /// Preview bubbles shown on the onboarding tone-palette row - a fixed,
-    /// representative subset of the real 15-tone map (not a separate,
+    /// representative subset of the real 16-tone map (not a separate,
     /// hand-tuned array), so the preview can never drift from reality.
     var swatches: [Color] {
         Self.previewTones.map { color(for: $0) }
@@ -50,7 +50,7 @@ enum TonePaletteChoice: String, CaseIterable, Identifiable {
 extension Tone {
 
     /// Used only if a palette/tone combination is ever missing from the map
-    /// below (shouldn't happen - every palette covers all 15 cases).
+    /// below (shouldn't happen - every palette covers all 16 cases).
     fileprivate var fallbackColor: Color {
         Color(red: 0.6, green: 0.6, blue: 0.6)
     }
@@ -76,7 +76,8 @@ extension TonePaletteChoice {
             .blunt: Color(red: 0.690, green: 0.690, blue: 0.722),
             .flirty: Color(red: 0.925, green: 0.282, blue: 0.600),
             .diplomatic: Color(red: 0.078, green: 0.722, blue: 0.651),
-            .dismissive: Color(red: 0.431, green: 0.608, blue: 0.769)
+            .dismissive: Color(red: 0.431, green: 0.608, blue: 0.769),
+            .savage: Color(red: 0.722, green: 0.078, blue: 0.078)
         ],
         .pastel: [
             .anxious: Color(red: 0.769, green: 0.663, blue: 0.941),
@@ -93,7 +94,8 @@ extension TonePaletteChoice {
             .blunt: Color(red: 0.839, green: 0.839, blue: 0.863),
             .flirty: Color(red: 0.969, green: 0.663, blue: 0.808),
             .diplomatic: Color(red: 0.620, green: 0.867, blue: 0.827),
-            .dismissive: Color(red: 0.718, green: 0.800, blue: 0.878)
+            .dismissive: Color(red: 0.718, green: 0.800, blue: 0.878),
+            .savage: Color(red: 0.945, green: 0.612, blue: 0.612)
         ],
         .neon: [
             .anxious: Color(red: 0.690, green: 0.149, blue: 1.0),
@@ -110,7 +112,8 @@ extension TonePaletteChoice {
             .blunt: Color(red: 0.839, green: 0.839, blue: 1.0),
             .flirty: Color(red: 1.0, green: 0.180, blue: 0.624),
             .diplomatic: Color(red: 0.0, green: 1.0, blue: 0.784),
-            .dismissive: Color(red: 0.498, green: 0.659, blue: 1.0)
+            .dismissive: Color(red: 0.498, green: 0.659, blue: 1.0),
+            .savage: Color(red: 1.0, green: 0.0, blue: 0.129)
         ],
         .mono: [
             .anxious: Color(white: 0.565),
@@ -127,7 +130,8 @@ extension TonePaletteChoice {
             .blunt: Color(white: 0.867),
             .flirty: Color(white: 0.894),
             .diplomatic: Color(white: 0.922),
-            .dismissive: Color(white: 0.949)
+            .dismissive: Color(white: 0.949),
+            .savage: Color(white: 0.976)
         ],
         // Phosphor-CRT palette designed to match the Terminal app theme -
         // greens/cyans/ambers only, no purple/pink hues that would clash
@@ -147,7 +151,8 @@ extension TonePaletteChoice {
             .blunt: Color(red: 0.827, green: 1.0, blue: 0.827),
             .flirty: Color(red: 1.0, green: 0.482, blue: 0.482),
             .diplomatic: Color(red: 0.0, green: 0.808, blue: 0.702),
-            .dismissive: Color(red: 0.678, green: 0.616, blue: 0.412)
+            .dismissive: Color(red: 0.678, green: 0.616, blue: 0.412),
+            .savage: Color(red: 1.0, green: 0.302, blue: 0.0)
         ]
     ]
 }

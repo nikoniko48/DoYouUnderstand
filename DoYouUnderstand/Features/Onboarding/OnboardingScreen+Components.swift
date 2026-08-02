@@ -45,12 +45,12 @@ extension OnboardingScreen {
                         .clipShape(RoundedRectangle(cornerRadius: .space12))
 
                     VStack(alignment: .leading, spacing: .space4) {
-                        Text(title)
+                        Text(LocalizedStringKey(title))
                             .font(Theme.Typography.onboardingBody.weight(.bold))
                             .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Text.title)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text(subtitle)
+                        Text(LocalizedStringKey(subtitle))
                             .font(Theme.Typography.bodyText)
                             .foregroundStyle(isSelected ? Theme.Colors.Main.background.opacity(0.7) : Theme.Colors.Text.muted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -109,7 +109,7 @@ extension OnboardingScreen {
                             .stroke(toneColor.opacity(0.4), lineWidth: 1)
                     )
 
-                Text(text)
+                Text(LocalizedStringKey(text))
                     .font(Theme.Typography.onboardingBody.weight(.semibold))
                     .foregroundStyle(Theme.Colors.Text.title)
                     .fixedSize(horizontal: false, vertical: true)

@@ -11,6 +11,7 @@ extension OnboardingScreen {
 
     struct GreetingStepView: View {
 
+        let stateModel: OnboardingViewModel.StateModel
         let actions: OnboardingViewModel.Actions
 
         private static let points: [Feature] = [
@@ -19,7 +20,184 @@ extension OnboardingScreen {
             Feature(icon: "lock.fill", text: "No account, no cloud, 100% private", toneColor: Theme.Colors.Tone.anxious)
         ]
 
+        // The "hook" - a passive-aggressive-reading message - followed by
+        // its decoded subtext, mirroring exactly what the app itself does
+        // with a real message, as the very first thing a new user sees.
+        // Computed, not `static let` - see the note on `demoTones` in
+        // `OnboardingScreen+ClosingSteps.swift` for why.
+        private static var hookText: String { Loc.t("We need to talk.") }
+        private static var decodedText: String { Loc.t("I am feeling insecure and need reassurance.") }
+
+        private enum IntroPhase {
+            case hidden
+            case messageIn
+            case decoding
+            case subtextRevealed
+            case done
+        }
+
+        @State private var introPhase: IntroPhase = .hidden
+        @State private var isDecodingPulsing = false
+        @State private var isMainUIVisible = false
+
         var body: some View {
+            ZStack {
+                mainContent
+                    .opacity(isMainUIVisible ? 1 : 0)
+                    .offset(y: isMainUIVisible ? 0 : 16)
+                    .allowsHitTesting(isMainUIVisible)
+
+                introPreview
+                    .opacity(introPhase == .hidden || introPhase == .done ? 0 : 1)
+                    .scaleEffect(introPhase == .done ? 0.9 : 1)
+            }
+            .task {
+                await playIntro()
+            }
+        }
+
+        @MainActor
+        private func playIntro() async {
+            // If this view is somehow recreated after the intro already
+            // finished once, skip straight to the settled end state instead
+            // of replaying it (and instead of leaving the main UI stuck
+            // invisible, which returning early with no other change would
+            // otherwise do).
+            guard stateModel.isGreetingIntroPlaying else {
+                introPhase = .done
+                isMainUIVisible = true
+                return
+            }
+
+            // Phase A (0.0s-1.2s): the incoming message card pops in.
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
+                introPhase = .messageIn
+            }
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+
+            // Phase B (1.2s-2.0s): a "decoding" status badge appears below it.
+            withAnimation(.easeInOut(duration: 0.3)) {
+                introPhase = .decoding
+            }
+            try? await Task.sleep(nanoseconds: 800_000_000)
+
+            // Phase C (2.0s-3.8s): the hidden-subtext card expands in.
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                introPhase = .subtextRevealed
+            }
+            // ...then hold the complete message + subtext pair for ~1.5s
+            // (3.8s-5.3s) so the "aha" moment actually registers.
+            try? await Task.sleep(nanoseconds: 3_300_000_000)
+
+            // Phase D: fade out / scale down the intro preview, then fade
+            // in the real screen behind it.
+            withAnimation(.easeIn(duration: 0.4)) {
+                introPhase = .done
+            }
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            withAnimation(.easeOut(duration: 0.6)) {
+                isMainUIVisible = true
+                stateModel.isGreetingIntroPlaying = false
+            }
+        }
+
+        private var introPreview: some View {
+            VStack(alignment: .leading, spacing: .space12) {
+                if introPhase != .hidden {
+                    IncomingMessageBubble(
+                        senderLabel: Loc.t("RECEIVED MESSAGE"),
+                        text: Self.hookText,
+                        toneColor: Theme.Colors.Tone.passiveAggressive
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .top)))
+                }
+
+                if introPhase == .decoding || introPhase == .subtextRevealed {
+                    decodingBadge
+                        .transition(.opacity)
+                }
+
+                if introPhase == .subtextRevealed {
+                    subtextRevealCard
+                        .transition(
+                            .asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.92, anchor: .top)),
+                                removal: .opacity
+                            )
+                        )
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
+        private var decodingBadge: some View {
+            HStack(spacing: .space8) {
+                BouncingDotsLoader(color: Theme.Colors.Main.accent, dotSize: 5)
+
+                Text("DECODING SUBTEXT...")
+                    .font(Theme.Typography.tinyLabel)
+                    .tracking(1)
+                    .foregroundStyle(Theme.Colors.Main.accent)
+            }
+            .padding(.horizontal, .space12)
+            .padding(.vertical, .space8)
+            .background(Theme.Colors.Main.accent.opacity(0.12))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(Theme.Colors.Main.accent.opacity(0.5), lineWidth: 1))
+            .shadow(color: Theme.Colors.Main.accent.opacity(isDecodingPulsing ? 0.5 : 0.1), radius: 8)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
+                    isDecodingPulsing = true
+                }
+            }
+        }
+
+        // Colored/tagged as "Anxious" rather than the neutral app accent -
+        // the decoded line itself reads as an anxious/insecure subtext, so
+        // matching the card to that tone (the same way a real Explanation
+        // result would) makes the reveal feel more alive and previews
+        // exactly what the app does with a real message.
+        private var subtextRevealCard: some View {
+            VStack(alignment: .leading, spacing: .space8) {
+                HStack(spacing: .space6) {
+                    Image(systemName: "eye.fill")
+                    Text("HIDDEN SUBTEXT DETECTED")
+                }
+                .font(Theme.Typography.badgeLabel)
+                .foregroundStyle(Tone.anxious.color)
+
+                Text(String(format: Loc.t("%@ ANXIOUS"), Tone.anxious.emoji))
+                    .font(Theme.Typography.tinyLabel.weight(.bold))
+                    .foregroundStyle(Tone.anxious.color)
+                    .padding(.horizontal, .space12)
+                    .padding(.vertical, .space6)
+                    .background(Tone.anxious.color.opacity(0.18))
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Tone.anxious.color.opacity(0.5), lineWidth: 1))
+
+                Text(Self.decodedText)
+                    .font(Theme.Typography.onboardingBody.weight(.semibold))
+                    .foregroundStyle(Theme.Colors.Text.title)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.space16)
+            .frame(maxWidth: 290, alignment: .leading)
+            .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+                        .fill(Tone.anxious.color.opacity(0.18))
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+                    .stroke(Tone.anxious.color, lineWidth: 2)
+            )
+        }
+
+        private var mainContent: some View {
             VStack(alignment: .leading, spacing: .space32) {
                 Spacer(minLength: .space0)
 
@@ -27,19 +205,16 @@ extension OnboardingScreen {
                     Text("STOP GUESSING\nWHAT THEY MEAN.")
                         .font(Theme.Typography.heroTitle)
                         .foregroundStyle(Theme.Colors.Text.title)
-                        .onboardingReveal(delay: 0)
 
                     Text("DoYouUnderstand decodes the subtext behind any text, DM, or email, and hands you the perfect reply.")
                         .font(Theme.Typography.onboardingBody)
                         .foregroundStyle(Theme.Colors.Text.muted)
                         .lineSpacing(5)
-                        .onboardingReveal(delay: 0.12)
                 }
 
                 VStack(alignment: .leading, spacing: .space16) {
                     ForEach(Array(Self.points.enumerated()), id: \.element.id) { index, point in
                         FinisherFeatureRow(icon: point.icon, text: point.text, toneColor: point.toneColor)
-                            .onboardingReveal(delay: 0.24 + Double(index) * 0.1)
                     }
                 }
 
@@ -67,6 +242,8 @@ extension OnboardingScreen {
         let stateModel: OnboardingViewModel.StateModel
         let actions: OnboardingViewModel.Actions
 
+        @FocusState private var isNameFieldFocused: Bool
+
         var body: some View {
             VStack(alignment: .leading, spacing: .space24) {
                 Text("What should we call you?")
@@ -83,6 +260,7 @@ extension OnboardingScreen {
                     prompt: Text("Your name")
                         .foregroundStyle(Theme.Colors.Text.muted)
                 )
+                .focused($isNameFieldFocused)
                 .font(Theme.Typography.onboardingBody.weight(.bold))
                 .foregroundStyle(Theme.Colors.Text.title)
                 .textInputAutocapitalization(.words)
@@ -95,6 +273,14 @@ extension OnboardingScreen {
                         .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
                 )
                 .onboardingReveal(delay: 0.12)
+            }
+            .onAppear {
+                // A short delay so the request lands after this step's own
+                // slide-in transition settles, instead of fighting it for
+                // the keyboard's own show animation.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    isNameFieldFocused = true
+                }
             }
         }
     }
@@ -171,7 +357,7 @@ extension OnboardingScreen {
                                 HStack(spacing: .space12) {
                                     ForEach(row) { gender in
                                         GenderOptionChip(
-                                            title: gender.rawValue,
+                                            title: gender.displayName,
                                             isSelected: stateModel.selectedGender == gender
                                         ) {
                                             actions.onSelectGender?(gender)
@@ -184,6 +370,11 @@ extension OnboardingScreen {
                     .onboardingReveal(delay: 0.24)
                 }
             }
+            // The vertical ScrollView's default edge-to-edge clipping was
+            // slicing a sliver off the selected chip's border on the left
+            // and right - there's nothing meaningful to hide off-screen
+            // horizontally here, so disabling it is safe.
+            .scrollClipDisabled()
         }
     }
 
@@ -274,6 +465,10 @@ extension OnboardingScreen {
                     .onboardingReveal(delay: 0.42)
                 }
             }
+            // Same fix as `AgeStepView` - the vertical ScrollView's default
+            // edge clipping was slicing the selected tone-palette row's
+            // border (and, less noticeably, the theme card's) on the sides.
+            .scrollClipDisabled()
         }
     }
 

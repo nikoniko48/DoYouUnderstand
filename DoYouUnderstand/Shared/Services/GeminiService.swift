@@ -37,12 +37,21 @@ enum GeminiService {
         )
     }
 
-    static func reply(text: String, images: [Data], excludeTones: [Tone] = []) async throws -> ReplyViewModel.Payload {
+    /// Requests one reply per tone in `tones`, in one Gemini call - used for
+    /// the initial batch (a handful of contrasting default tones, for a fast
+    /// first result) rather than all 16 up front.
+    static func reply(
+        text: String,
+        images: [Data],
+        tones: [Tone],
+        targetLanguage: ReplyLanguage = .autoDetect
+    ) async throws -> ReplyViewModel.Payload {
         let body = AnalyzeRequestBody(
             mode: "reply",
             text: text,
             images: images.map { $0.base64EncodedString() },
-            excludeTones: excludeTones.isEmpty ? nil : excludeTones.map { $0.rawValue }
+            tones: tones.map { $0.rawValue },
+            targetLanguage: targetLanguage.rawValue
         )
         let data = try await invoke(body)
         let decoded = try JSONDecoder().decode(ReplyResponseBody.self, from: data)
@@ -68,6 +77,24 @@ enum GeminiService {
         )
     }
 
+    /// On-demand "generate just this one tone" - used when the user taps a
+    /// not-yet-generated tone pill on the Reply screen after the initial
+    /// batch, and also to regenerate an existing card in a different
+    /// language via its Tweak panel's language toggle. Skips re-analyzing
+    /// the original message's tone.
+    static func replyForTone(text: String, tone: Tone, targetLanguage: ReplyLanguage = .autoDetect) async throws -> String {
+        let body = AnalyzeRequestBody(
+            mode: "replyForTone",
+            text: text,
+            images: [],
+            tone: tone.rawValue,
+            targetLanguage: targetLanguage.rawValue
+        )
+        let data = try await invoke(body)
+        let decoded = try JSONDecoder().decode(TweakResponseBody.self, from: data)
+        return decoded.text
+    }
+
     static func tweak(replyText: String, tone: Tone, instruction: String) async throws -> String {
         let body = AnalyzeRequestBody(
             mode: "tweak",
@@ -90,24 +117,27 @@ extension GeminiService {
         let mode: String
         let text: String
         let images: [String]
-        var excludeTones: [String]?
+        var tones: [String]?
         var tone: String?
         var instruction: String?
+        var targetLanguage: String?
 
         init(
             mode: String,
             text: String,
             images: [String],
-            excludeTones: [String]? = nil,
+            tones: [String]? = nil,
             tone: String? = nil,
-            instruction: String? = nil
+            instruction: String? = nil,
+            targetLanguage: String? = nil
         ) {
             self.mode = mode
             self.text = text
             self.images = images
-            self.excludeTones = excludeTones
+            self.tones = tones
             self.tone = tone
             self.instruction = instruction
+            self.targetLanguage = targetLanguage
         }
     }
 

@@ -142,7 +142,12 @@ extension InputViewModel {
                     self.stateModel.isLoaderPresented = false
                     self.output(.explain(payload))
                 case .reply:
-                    let payload = try await GeminiService.reply(text: text, images: images)
+                    let payload = try await GeminiService.reply(
+                        text: text,
+                        images: images,
+                        tones: Tone.initialReplyBatch,
+                        targetLanguage: ReplyLanguagePreferenceStore.shared.defaultReplyLanguage
+                    )
                     UsageLimiter.recordUsage()
                     self.historyService.save(.reply(payload))
                     self.stateModel.isLoaderPresented = false

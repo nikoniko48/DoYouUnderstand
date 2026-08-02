@@ -39,6 +39,10 @@ extension HistoryItem {
     private static func formattedTimestamp(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .short
+        // Explicit, not `Locale.current` - this needs to follow the in-app
+        // language picked in Settings, independent of the device's own
+        // system language (same reasoning as `LocalizationManager`).
+        formatter.locale = LocalizationManager.shared.locale
         return formatter.localizedString(for: date, relativeTo: Date())
     }
 }

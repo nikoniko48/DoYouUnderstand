@@ -23,6 +23,27 @@ struct PrivacyPolicyScreen: View {
             ContentView(actions: viewModel.actions)
         }
         .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.actions.onTapBack?()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                }
+                .accessibilityIdentifier("backButton")
+            }
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: .space2) {
+                    Text("SETTINGS")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Text("Privacy Policy")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(Colors.Text.title)
+                }
+            }
+        }
     }
 }
 
@@ -35,38 +56,6 @@ extension PrivacyPolicyScreen {
         var body: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: .space24) {
-
-                    // MARK: - Header
-                    HStack(spacing: .space16) {
-                        Button {
-                            actions.onTapBack?()
-                        } label: {
-                            Image(systemName: "arrow.left")
-                                .font(Typography.bodyText)
-                                .scaleEffect(1.2)
-                                .foregroundStyle(Colors.Text.highlight)
-                                .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(Circle())
-                                .overlay(
-                                    Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
-                        }
-                        .accessibilityIdentifier("backButton")
-
-                        VStack(alignment: .leading, spacing: .space2) {
-                            Text("SETTINGS")
-                                .font(Typography.badgeLabel)
-                                .foregroundStyle(Colors.Text.muted)
-
-                            Text("Privacy Policy")
-                                .font(Typography.screenTitle)
-                                .foregroundStyle(Colors.Text.title)
-                        }
-
-                        Spacer()
-                    }
-                    .onboardingReveal(delay: 0)
 
                     Text("Last updated August 2026")
                         .font(Typography.smallBody)
@@ -141,11 +130,11 @@ extension PrivacyPolicyScreen {
 
         var body: some View {
             VStack(alignment: .leading, spacing: .space8) {
-                Text(section.title)
+                Text(LocalizedStringKey(section.title))
                     .font(Theme.Typography.biggerText)
                     .foregroundStyle(Theme.Colors.Text.title)
 
-                Text(section.body)
+                Text(LocalizedStringKey(section.body))
                     .font(Theme.Typography.bodyText)
                     .foregroundStyle(Theme.Colors.Text.muted)
                     .lineSpacing(4)

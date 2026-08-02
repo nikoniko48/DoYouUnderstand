@@ -30,147 +30,189 @@ struct ReplyScreen: View {
             )
         }
         .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.actions.onTapBack?()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                }
+                .accessibilityIdentifier("backButton")
+            }
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: .space2) {
+                    Text("REPLY GENERATOR")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Text("Pick your weapon")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(Colors.Text.title)
+                }
+            }
+        }
     }
 }
 
 extension ReplyScreen {
-    
+
     struct ContentView: View {
         @Bindable var stateModel: ReplyViewModel.StateModel
         let actions: ReplyViewModel.Actions
-        
+        @State private var showBackToTop = false
+
+        private static let topAnchorID = "replyTop"
+
         var body: some View {
             GeometryReader { proxy in
-                ScrollView {
-                    VStack(spacing: .space24) {
-                        
-                        // MARK: - Header
-                        HStack(spacing: .space16) {
-                            Button {
-                                actions.onTapBack?()
-                            } label: {
-                                Image(systemName: "arrow.left")
-                                    .font(Typography.bodyText)
-                                    .scaleEffect(1.2)
-                                    .foregroundStyle(Colors.Text.highlight)
-                                    .frame(width: StaticData.Layout.backButtonSize.width, height: StaticData.Layout.backButtonSize.height)
-                                    .background(Colors.Main.cardSurface)
-                                    .clipShape(Circle())
-                                    .overlay(
-                                        Circle().stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                    )
-                            }
-                            
-                            VStack(alignment: .leading, spacing: .space2) {
-                                Text("REPLY GENERATOR")
-                                    .font(Typography.badgeLabel)
-                                    .foregroundStyle(Colors.Text.muted)
-                                
-                                Text("Pick your weapon")
-                                    .font(Typography.screenTitle)
-                                    .foregroundStyle(Colors.Text.title)
-                            }
-                            
-                            Spacer()
-                        }
-                        
-                        // MARK: - Tone Detected Card
-                        if let toneAnalysis = stateModel.originalTone {
-                            VStack(alignment: .leading, spacing: .space16) {
-                                Text("ORIGINAL TONE DETECTED")
-                                    .font(Typography.badgeLabel)
-                                    .foregroundStyle(Colors.Text.muted)
-                                
-                                HStack(spacing: .space12) {
-                                    Text(toneAnalysis.tone.rawValue.uppercased())
-                                        .font(Typography.badgeLabel)
-                                        .foregroundStyle(toneAnalysis.tone.color)
-                                        .padding(.horizontal, .space12)
-                                        .padding(.vertical, .space6)
-                                        .background(toneAnalysis.tone.color.opacity(0.15))
-                                        .clipShape(Capsule())
-                                        .overlay(Capsule().stroke(toneAnalysis.tone.color.opacity(0.4), lineWidth: 1))
-                                    
-                                    GeometryReader { geo in
-                                        Capsule()
-                                            .fill(Colors.Main.borderSubtle)
-                                            .overlay(alignment: .leading) {
-                                                Capsule()
-                                                    .fill(toneAnalysis.tone.color)
-                                                    .frame(width: geo.size.width * CGFloat(toneAnalysis.score) / 100)
-                                            }
-                                    }
-                                    .frame(height: 6)
-                                    
-                                    Text("\(toneAnalysis.score)%")
-                                        .font(Typography.badgeLabel)
-                                        .foregroundStyle(toneAnalysis.tone.color)
-                                }
-                                
-                                Text(toneAnalysis.quote)
-                                    .font(Typography.bodyText)
-                                    .foregroundStyle(Colors.Text.muted)
-                                    .lineSpacing(4)
-                            }
-                            .padding(.space16)
-                            .background(Colors.Main.cardSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                    .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                            )
-                        }
-                        
-                        // MARK: - Reply Options Cards
-                        VStack(spacing: .space16) {
-                            ForEach($stateModel.options) { $option in
-                                ReplyOptionCard(option: $option, actions: actions)
-                            }
-                        }
+                ScrollViewReader { scrollProxy in
+                    ScrollView {
+                        VStack(spacing: .space24) {
 
-                        // MARK: - Generate More Tones
-                        if stateModel.hasAllTones {
-                            HStack(spacing: .space8) {
-                                Image(systemName: "checkmark.seal.fill")
-                                Text("That's every tone we've got!")
-                            }
-                            .font(Typography.smallBody.weight(.bold))
-                            .foregroundStyle(Colors.Text.muted)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Colors.Main.cardSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                    .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                            )
-                        } else {
-                            Button {
-                                actions.onGenerateMoreTones?()
-                            } label: {
-                                HStack(spacing: .space8) {
-                                    if stateModel.isGeneratingMoreTones {
-                                        BouncingDotsLoader(color: Colors.Main.accent.contrastingForeground)
-                                    } else {
-                                        Image(systemName: "sparkles")
-                                        Text("Generate More Tones")
+                            Color.clear
+                                .frame(height: 0)
+                                .id(Self.topAnchorID)
+
+                            // MARK: - Tone Detected Card
+                            if let toneAnalysis = stateModel.originalTone {
+                                VStack(alignment: .leading, spacing: .space16) {
+                                    Text("ORIGINAL TONE DETECTED")
+                                        .font(Typography.badgeLabel)
+                                        .foregroundStyle(Colors.Text.muted)
+
+                                    HStack(spacing: .space12) {
+                                        Text(toneAnalysis.tone.displayName.uppercased())
+                                            .font(Typography.badgeLabel)
+                                            .foregroundStyle(toneAnalysis.tone.color)
+                                            .padding(.horizontal, .space12)
+                                            .padding(.vertical, .space6)
+                                            .background(toneAnalysis.tone.color.opacity(0.15))
+                                            .clipShape(Capsule())
+                                            .overlay(Capsule().stroke(toneAnalysis.tone.color.opacity(0.4), lineWidth: 1))
+
+                                        GeometryReader { geo in
+                                            Capsule()
+                                                .fill(Colors.Main.borderSubtle)
+                                                .overlay(alignment: .leading) {
+                                                    Capsule()
+                                                        .fill(toneAnalysis.tone.color)
+                                                        .frame(width: geo.size.width * CGFloat(toneAnalysis.score) / 100)
+                                                }
+                                        }
+                                        .frame(height: 6)
+
+                                        Text("\(toneAnalysis.score)%")
+                                            .font(Typography.badgeLabel)
+                                            .foregroundStyle(toneAnalysis.tone.color)
                                     }
+
+                                    Text(toneAnalysis.quote)
+                                        .font(Typography.bodyText)
+                                        .foregroundStyle(Colors.Text.muted)
+                                        .lineSpacing(4)
+                                }
+                                .padding(.space16)
+                                .background(Colors.Main.cardSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                                        .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                                )
+                            }
+
+                            // MARK: - Generate A Specific Tone
+                            if !stateModel.availableTones.isEmpty {
+                                VStack(alignment: .leading, spacing: .space12) {
+                                    Text("GENERATE A SPECIFIC TONE")
+                                        .font(Typography.badgeLabel)
+                                        .foregroundStyle(Colors.Text.muted)
+
+                                    FlowLayout(horizontalSpacing: .space8, verticalSpacing: .space8) {
+                                        ForEach(stateModel.availableTones, id: \.self) { tone in
+                                            Button {
+                                                actions.onGenerateTone?(tone)
+                                            } label: {
+                                                Text(tone.displayName)
+                                                    .font(Typography.smallBody.weight(.bold))
+                                                    .foregroundStyle(tone.color)
+                                                    .padding(.horizontal, .space12)
+                                                    .padding(.vertical, .space6)
+                                                    .background(tone.color.opacity(0.15))
+                                                    .clipShape(Capsule())
+                                                    .overlay(Capsule().stroke(tone.color.opacity(0.4), lineWidth: 1))
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                HStack(spacing: .space8) {
+                                    Image(systemName: "checkmark.seal.fill")
+                                    Text("That's every tone we've got!")
                                 }
                                 .font(Typography.smallBody.weight(.bold))
-                                .foregroundStyle(Colors.Main.accent.contrastingForeground)
+                                .foregroundStyle(Colors.Text.muted)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Colors.Main.accent)
+                                .background(Colors.Main.cardSurface)
                                 .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                                        .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                                )
                             }
-                            .disabled(stateModel.isGeneratingMoreTones)
-                        }
 
-                        Spacer()
+                            // MARK: - Reply Options Cards
+                            VStack(spacing: .space16) {
+                                ForEach(stateModel.pendingTones, id: \.self) { tone in
+                                    ReplyOptionSkeletonCard(tone: tone)
+                                        .transition(
+                                            .asymmetric(
+                                                insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top)),
+                                                removal: .opacity
+                                            )
+                                        )
+                                }
+
+                                ForEach($stateModel.options) { $option in
+                                    ReplyOptionCard(option: $option, actions: actions)
+                                }
+                            }
+                            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: stateModel.pendingTones)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: stateModel.options)
+
+                            Spacer()
+                        }
+                        .padding(.horizontal, StaticData.Layout.screenPadding)
+                        .padding(.top, .space16)
+                        .frame(minHeight: proxy.size.height)
                     }
-                    .padding(.horizontal, StaticData.Layout.screenPadding)
-                    .padding(.top, .space16)
-                    .frame(minHeight: proxy.size.height)
+                    .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                        geometry.contentOffset.y
+                    } action: { _, newValue in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showBackToTop = newValue > 400
+                        }
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        if showBackToTop {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.35)) {
+                                    scrollProxy.scrollTo(Self.topAnchorID, anchor: .top)
+                                }
+                            } label: {
+                                Image(systemName: "arrow.up")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundStyle(Colors.Main.accent.contrastingForeground)
+                                    .frame(width: 48, height: 48)
+                                    .background(Colors.Main.accent)
+                                    .clipShape(Circle())
+                            }
+                            .accessibilityIdentifier("scrollToTopButton")
+                            .padding(.trailing, StaticData.Layout.screenPadding)
+                            .padding(.bottom, .space24)
+                            .transition(.scale.combined(with: .opacity))
+                        }
+                    }
                 }
             }
             // MARK: - DAILY LIMIT ALERT -
@@ -185,7 +227,7 @@ extension ReplyScreen {
             ) {
                 Button("Got it", role: .cancel) {}
             } message: {
-                Text(stateModel.limitReachedMessage ?? "")
+                Text(LocalizedStringKey(stateModel.limitReachedMessage ?? ""))
             }
             // MARK: - ERROR ALERT -
             .alert(
@@ -199,7 +241,7 @@ extension ReplyScreen {
             ) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(stateModel.errorMessage ?? "")
+                Text(LocalizedStringKey(stateModel.errorMessage ?? ""))
             }
         }
     }
@@ -207,7 +249,56 @@ extension ReplyScreen {
 
 // MARK: - Subcomponents
 extension ReplyScreen {
-    
+
+    /// A placeholder shown at the top of the results list while an
+    /// on-demand tone (a tapped pill) is being generated - swapped out for
+    /// the real `ReplyOptionCard` the moment that one Gemini call resolves.
+    struct ReplyOptionSkeletonCard: View {
+        let tone: Tone
+        @State private var isPulsing = false
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: .space16) {
+                HStack(spacing: .space8) {
+                    Text(tone.emoji)
+                        .font(.system(size: 20))
+                    Text(tone.replyTitle)
+                        .font(Theme.Typography.bodyText.weight(.bold))
+                        .foregroundStyle(tone.color)
+
+                    Spacer()
+
+                    BouncingDotsLoader(color: tone.color, dotSize: 6)
+                }
+
+                VStack(alignment: .leading, spacing: .space8) {
+                    skeletonLine(widthFraction: 1)
+                    skeletonLine(widthFraction: 0.9)
+                    skeletonLine(widthFraction: 0.6)
+                }
+            }
+            .padding(.space16)
+            .background(Theme.Colors.Main.cardSurface)
+            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                    .stroke(tone.color.opacity(0.3), lineWidth: 1)
+            )
+            .onAppear { isPulsing = true }
+        }
+
+        private func skeletonLine(widthFraction: CGFloat) -> some View {
+            GeometryReader { geo in
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Theme.Colors.Main.borderSubtle)
+                    .frame(width: geo.size.width * widthFraction, height: 14)
+            }
+            .frame(height: 14)
+            .opacity(isPulsing ? 0.4 : 1)
+            .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
+        }
+    }
+
     struct ReplyOptionCard: View {
         @Binding var option: ReplyViewModel.StateModel.ReplyOption
         let actions: ReplyViewModel.Actions
@@ -454,6 +545,21 @@ extension ReplyScreen {
                     }
                     .disabled(option.isRegenerating)
                 }
+
+                HStack {
+                    Text("LANGUAGE")
+                        .font(Theme.Typography.tinyLabel)
+                        .foregroundStyle(Theme.Colors.Text.muted)
+
+                    Spacer()
+
+                    LanguageTogglePill(
+                        activeLanguage: option.activeLanguage,
+                        isDisabled: option.isRegenerating
+                    ) { language in
+                        actions.onChangeLanguage?(option.id, language)
+                    }
+                }
             }
             .padding(.space12)
             .background(Theme.Colors.Main.background)
@@ -462,6 +568,47 @@ extension ReplyScreen {
                 RoundedRectangle(cornerRadius: .space12)
                     .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
             )
+        }
+    }
+
+    /// A compact `[ PL | EN ]` segmented toggle for overriding a single
+    /// reply card's language for this session only. `activeLanguage` may be
+    /// `.autoDetect` (the global default, before any override) - neither
+    /// segment highlights in that case, since auto-detect isn't a fixed
+    /// language choice.
+    struct LanguageTogglePill: View {
+        let activeLanguage: ReplyLanguage
+        let isDisabled: Bool
+        let onSelect: (ReplyLanguage) -> Void
+
+        var body: some View {
+            HStack(spacing: 2) {
+                segment(.polish, label: "PL")
+                segment(.english, label: "EN")
+            }
+            .padding(2)
+            .background(Theme.Colors.Main.background)
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1))
+            .opacity(isDisabled ? 0.5 : 1)
+        }
+
+        private func segment(_ language: ReplyLanguage, label: String) -> some View {
+            let isActive = activeLanguage == language
+
+            return Button {
+                onSelect(language)
+            } label: {
+                Text(label)
+                    .font(Theme.Typography.tinyLabel.weight(.bold))
+                    .foregroundStyle(isActive ? Theme.Colors.Main.background : Theme.Colors.Text.muted)
+                    .padding(.horizontal, .space12)
+                    .padding(.vertical, .space6)
+                    .background(isActive ? Theme.Colors.Main.accent : Color.clear)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(isDisabled)
         }
     }
 }
