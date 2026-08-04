@@ -10,6 +10,18 @@ import UIKit
 
 enum Theme {
 
+    /// iPad gets a modest, uniform legibility/tap-target bump - determined
+    /// once, since device idiom never changes during a run (unlike the
+    /// live-reskinning `Colors` below, which really do need to re-evaluate
+    /// on every read). `wideScale` is applied at the two font-builder
+    /// functions in `Typography` below, so every named token in this file -
+    /// and everywhere else in the app that reads them, including onboarding
+    /// - gets bigger automatically without each screen needing its own
+    /// size-class logic. `LiquidGlassCTAButtonStyle`'s default padding reads
+    /// this too, for a matching bump on the app's primary CTA buttons.
+    static let isWideDevice: Bool = UIDevice.current.userInterfaceIdiom == .pad
+    static let wideScale: CGFloat = isWideDevice ? 1.15 : 1.0
+
     /// All colors are computed from `ThemeManager.shared` (not static
     /// asset-catalog lookups), so every call site below automatically
     /// re-skins - live, no relaunch needed - whenever the current
@@ -81,12 +93,12 @@ enum Theme {
 
         /// Space Grotesk (variable font) - titles, headlines, big numbers, buttons.
         static func spaceGrotesk(size: CGFloat, weight: Font.Weight = .regular) -> Font {
-            Font.custom("SpaceGrotesk-Light", size: size).weight(weight)
+            Font.custom("SpaceGrotesk-Light", size: size * Theme.wideScale).weight(weight)
         }
 
         /// Inter (variable font) - body copy, labels, and other supporting text.
         static func inter(size: CGFloat, weight: Font.Weight = .regular) -> Font {
-            Font.custom("Inter-Regular", size: size).weight(weight)
+            Font.custom("Inter-Regular", size: size * Theme.wideScale).weight(weight)
         }
 
         static let heroTitle = spaceGrotesk(size: 34, weight: .black)

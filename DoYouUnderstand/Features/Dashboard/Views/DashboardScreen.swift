@@ -47,12 +47,16 @@ extension DashboardScreen {
                 HStack(alignment: .center, spacing: .space0) {
                     
                     VStack(alignment: .leading, spacing: .space2) {
+                        // A bigger jump than the app-wide `Theme.wideScale`
+                        // bump alone - this is the Dashboard's own hero
+                        // header, so on iPad it gets to be genuinely bold
+                        // rather than just "a little bigger."
                         Text("TEXT ANALYZER")
-                            .font(Typography.bodyText)
+                            .font(Theme.isWideDevice ? Typography.inter(size: 16, weight: .bold) : Typography.bodyText)
                             .foregroundStyle(Colors.Text.muted)
-                        
+
                         Text("DO YOU\nUNDERSTAND?!")
-                            .font(Typography.hugeTitle)
+                            .font(Theme.isWideDevice ? Typography.heroTitle : Typography.hugeTitle)
                             .foregroundStyle(Colors.Text.title)
                     }
                     

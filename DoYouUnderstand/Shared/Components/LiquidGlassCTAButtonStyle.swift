@@ -18,7 +18,7 @@ struct LiquidGlassCTAButtonStyle: ButtonStyle {
 
     var tint: Color
     var cornerRadius: CGFloat = StaticData.Layout.cornerRadius
-    var verticalPadding: CGFloat = 18
+    var verticalPadding: CGFloat = 18 * Theme.wideScale
     var isInteractive: Bool = true
 
     private var shape: RoundedRectangle {

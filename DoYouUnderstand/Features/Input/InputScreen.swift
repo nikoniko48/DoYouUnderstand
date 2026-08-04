@@ -92,7 +92,16 @@ extension InputScreen {
                                             .font(Typography.bodyText)
                                             .foregroundStyle(Colors.Text.title)
                                             .tint(Colors.Main.primary)
-                                            .lineLimit(8...(isFocused ? 8 : 15))
+                                            // A little taller on iPad, where
+                                            // there's plenty of vertical room
+                                            // to spare, so the input area
+                                            // doesn't look cramped relative
+                                            // to everything else on screen.
+                                            .lineLimit(
+                                                Theme.isWideDevice
+                                                    ? 11...(isFocused ? 11 : 20)
+                                                    : 8...(isFocused ? 8 : 15)
+                                            )
                                             .animation(.easeInOut(duration: 0.2), value: isFocused)
                                             .padding(.horizontal, .space16)
                                             .padding(.vertical, .space16)

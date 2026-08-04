@@ -62,262 +62,10 @@ extension RefineScreen {
         var body: some View {
             ScrollView {
                 VStack(spacing: .space24) {
-
-                    // MARK: - A. Transferred Draft Card
-                    VStack(alignment: .leading, spacing: .space12) {
-                        HStack {
-                            Text("YOUR DRAFT")
-                                .font(Typography.badgeLabel)
-                                .foregroundStyle(Colors.Text.muted)
-
-                            Spacer()
-
-                            if !stateModel.isEditingDraft {
-                                Button {
-                                    actions.onStartEditDraft?()
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        isDraftFieldFocused = true
-                                    }
-                                } label: {
-                                    Image(systemName: "pencil")
-                                        .font(Typography.smallBody.weight(.bold))
-                                        .foregroundStyle(Colors.Main.primary)
-                                }
-                                .accessibilityLabel("Edit")
-                            }
-                        }
-
-                        if stateModel.isEditingDraft {
-                            TextField("Edit your draft...", text: $stateModel.draftEditText, axis: .vertical)
-                                .focused($isDraftFieldFocused)
-                                .font(Typography.bodyText)
-                                .foregroundStyle(Colors.Text.title)
-                                .tint(Colors.Main.primary)
-                                .lineLimit(4...12)
-
-                            HStack(spacing: .space12) {
-                                Button {
-                                    isDraftFieldFocused = false
-                                    actions.onCancelEditDraft?()
-                                } label: {
-                                    Text("Cancel")
-                                        .font(Typography.smallBody.weight(.bold))
-                                        .foregroundStyle(Colors.Text.muted)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 12)
-                                        .background(Colors.Main.background)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                        )
-                                }
-
-                                Button {
-                                    isDraftFieldFocused = false
-                                    actions.onSaveEditDraft?()
-                                } label: {
-                                    Text("Save")
-                                        .font(Typography.smallBody.weight(.bold))
-                                        .foregroundStyle(Colors.Main.primary.contrastingForeground)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 12)
-                                        .background(Colors.Main.primary)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                }
-                            }
-                        } else {
-                            Text(stateModel.originalMessage)
-                                .font(Typography.bodyText)
-                                .foregroundStyle(Colors.Text.highlight)
-                                .lineSpacing(4)
-                        }
-                    }
-                    .padding(.space16)
-                    .background(Colors.Main.cardSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                            .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                    )
-                    .onboardingReveal(delay: 0.06)
-
-                    // MARK: - B. Tone Analysis Card
-                    VStack(alignment: .leading, spacing: .space12) {
-                        Text("DETECTED TONE")
-                            .font(Typography.badgeLabel)
-                            .foregroundStyle(Colors.Text.muted)
-
-                        if stateModel.isAnalyzingTone {
-                            HStack(spacing: .space12) {
-                                BouncingDotsLoader(color: Colors.Main.accent, dotSize: 8)
-                                Text("Analyzing your draft...")
-                                    .font(Typography.bodyText)
-                                    .foregroundStyle(Colors.Text.muted)
-                            }
-                        } else {
-                            Text(stateModel.tone)
-                                .font(Typography.biggerText.weight(.bold))
-                                .foregroundStyle(stateModel.colorTone.color)
-
-                            Text(stateModel.summary)
-                                .font(Typography.bodyText)
-                                .foregroundStyle(Colors.Text.title)
-                                .lineSpacing(4)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.space16)
-                    .background(stateModel.isAnalyzingTone ? Colors.Main.cardSurface : stateModel.colorTone.color.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                            .stroke(stateModel.isAnalyzingTone ? Colors.Main.borderSubtle : stateModel.colorTone.color.opacity(0.4), lineWidth: stateModel.isAnalyzingTone ? 1 : 2)
-                    )
-                    .animation(.easeInOut(duration: 0.25), value: stateModel.isAnalyzingTone)
-                    .onboardingReveal(delay: 0.12)
-
-                    // MARK: - C. Refinement Quick-Actions
-                    VStack(alignment: .leading, spacing: .space12) {
-                        Text("REFINE IT")
-                            .font(Typography.badgeLabel)
-                            .foregroundStyle(Colors.Text.muted)
-
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: .space12), GridItem(.flexible(), spacing: .space12)], spacing: .space12) {
-                            ForEach(RefineAction.allCases) { action in
-                                RefineActionButton(
-                                    action: action,
-                                    isActive: stateModel.activeAction == action,
-                                    isDisabled: stateModel.isRefining
-                                ) {
-                                    actions.onSelectAction?(action)
-                                }
-                            }
-                        }
-                    }
-                    .onboardingReveal(delay: 0.18)
-
-                    // MARK: - D. Refined Result Card
-                    if stateModel.isRefining && stateModel.refinedText == nil {
-                        RefinedResultSkeletonCard()
-                    } else if let refinedText = stateModel.refinedText {
-                        VStack(alignment: .leading, spacing: .space16) {
-                            HStack {
-                                Text("REFINED VERSION")
-                                    .font(Typography.badgeLabel)
-                                    .foregroundStyle(Colors.Text.muted)
-
-                                Spacer()
-
-                                if stateModel.isRefining {
-                                    BouncingDotsLoader(color: Colors.Main.accent, dotSize: 6)
-                                }
-                            }
-
-                            if stateModel.isEditingResult {
-                                TextField("Edit the refined text...", text: $stateModel.resultEditText, axis: .vertical)
-                                    .focused($isResultFieldFocused)
-                                    .font(Typography.bodyText)
-                                    .foregroundStyle(Colors.Text.title)
-                                    .tint(Colors.Main.accent)
-                                    .lineLimit(4...12)
-
-                                HStack(spacing: .space12) {
-                                    Button {
-                                        isResultFieldFocused = false
-                                        actions.onCancelEditResult?()
-                                    } label: {
-                                        Text("Cancel")
-                                            .font(Typography.smallBody.weight(.bold))
-                                            .foregroundStyle(Colors.Text.muted)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 12)
-                                            .background(Colors.Main.background)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                            )
-                                    }
-
-                                    Button {
-                                        isResultFieldFocused = false
-                                        actions.onSaveEditResult?()
-                                    } label: {
-                                        Text("Save")
-                                            .font(Typography.smallBody.weight(.bold))
-                                            .foregroundStyle(Colors.Main.accent.contrastingForeground)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 12)
-                                            .background(Colors.Main.accent)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    }
-                                }
-                            } else {
-                                Text(refinedText)
-                                    .font(Typography.bodyText)
-                                    .foregroundStyle(Colors.Text.title)
-                                    .lineSpacing(4)
-                                    .opacity(stateModel.isRefining ? 0.5 : 1)
-
-                                HStack(spacing: .space12) {
-                                    Button {
-                                        actions.onStartEditResult?()
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                            isResultFieldFocused = true
-                                        }
-                                    } label: {
-                                        HStack(spacing: .space6) {
-                                            Image(systemName: "pencil")
-                                            Text("Edit")
-                                        }
-                                        .font(Typography.smallBody.weight(.bold))
-                                        .foregroundStyle(Colors.Main.accent)
-                                        .padding(.vertical, 12)
-                                        .padding(.horizontal, .space16)
-                                        .background(Colors.Main.cardSurface)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Colors.Main.accent.opacity(0.4), lineWidth: 1)
-                                        )
-                                    }
-                                    .disabled(stateModel.isRefining)
-
-                                    Button {
-                                        actions.onCopy?()
-                                    } label: {
-                                        ZStack {
-                                            HStack(spacing: .space6) {
-                                                Image(systemName: "checkmark")
-                                                Text("Copied!")
-                                            }
-                                            .opacity(stateModel.isCopied ? 1 : 0)
-
-                                            HStack(spacing: .space6) {
-                                                Image(systemName: "doc.on.doc")
-                                                Text("Copy Message")
-                                            }
-                                            .opacity(stateModel.isCopied ? 0 : 1)
-                                        }
-                                        .font(Typography.primaryButton)
-                                        .foregroundStyle(Colors.Main.accent.contrastingForeground)
-                                    }
-                                    .buttonStyle(LiquidGlassCTAButtonStyle(tint: Colors.Main.accent, verticalPadding: .space12))
-                                    .disabled(stateModel.isRefining)
-                                }
-                            }
-                        }
-                        .padding(.space16)
-                        .background(Colors.Main.cardSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                .stroke(Colors.Main.accent, lineWidth: 2)
-                        )
-                        .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .top)))
-                    }
-
+                    draftCard
+                    toneAnalysisCard
+                    quickActionsSection
+                    resultSection
                     Spacer(minLength: .space16)
                 }
                 .padding(.horizontal, StaticData.Layout.screenPadding)
@@ -369,6 +117,278 @@ extension RefineScreen {
                 Button("Got it", role: .cancel) {}
             } message: {
                 Text(LocalizedStringKey(stateModel.refineActionBlockedMessage ?? ""))
+            }
+        }
+
+        // MARK: - A. Transferred Draft Card -
+
+        @ViewBuilder
+        private var draftCard: some View {
+            VStack(alignment: .leading, spacing: .space12) {
+                HStack {
+                    Text("YOUR DRAFT")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    Spacer()
+
+                    if !stateModel.isEditingDraft {
+                        Button {
+                            actions.onStartEditDraft?()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                isDraftFieldFocused = true
+                            }
+                        } label: {
+                            Image(systemName: "pencil")
+                                .font(Typography.smallBody.weight(.bold))
+                                .foregroundStyle(Colors.Main.primary)
+                        }
+                        .accessibilityLabel("Edit")
+                    }
+                }
+
+                if stateModel.isEditingDraft {
+                    TextField("Edit your draft...", text: $stateModel.draftEditText, axis: .vertical)
+                        .focused($isDraftFieldFocused)
+                        .font(Typography.bodyText)
+                        .foregroundStyle(Colors.Text.title)
+                        .tint(Colors.Main.primary)
+                        .lineLimit(4...12)
+
+                    HStack(spacing: .space12) {
+                        Button {
+                            isDraftFieldFocused = false
+                            actions.onCancelEditDraft?()
+                        } label: {
+                            Text("Cancel")
+                                .font(Typography.smallBody.weight(.bold))
+                                .foregroundStyle(Colors.Text.muted)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Colors.Main.background)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                                )
+                        }
+
+                        Button {
+                            isDraftFieldFocused = false
+                            actions.onSaveEditDraft?()
+                        } label: {
+                            Text("Save")
+                                .font(Typography.smallBody.weight(.bold))
+                                .foregroundStyle(Colors.Main.primary.contrastingForeground)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Colors.Main.primary)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                } else {
+                    Text(stateModel.originalMessage)
+                        .font(Typography.bodyText)
+                        .foregroundStyle(Colors.Text.highlight)
+                        .lineSpacing(4)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.space16)
+            .background(Colors.Main.cardSurface)
+            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                    .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+            )
+            .onboardingReveal(delay: 0.06)
+        }
+
+        // MARK: - B. Tone Analysis Card -
+
+        @ViewBuilder
+        private var toneAnalysisCard: some View {
+            VStack(alignment: .leading, spacing: .space12) {
+                Text("DETECTED TONE")
+                    .font(Typography.badgeLabel)
+                    .foregroundStyle(Colors.Text.muted)
+
+                if stateModel.isAnalyzingTone {
+                    HStack(spacing: .space12) {
+                        BouncingDotsLoader(color: Colors.Main.accent, dotSize: 8)
+                        Text("Analyzing your draft...")
+                            .font(Typography.bodyText)
+                            .foregroundStyle(Colors.Text.muted)
+                    }
+                } else {
+                    Text(stateModel.tone)
+                        .font(Typography.biggerText.weight(.bold))
+                        .foregroundStyle(stateModel.colorTone.color)
+
+                    Text(stateModel.summary)
+                        .font(Typography.bodyText)
+                        .foregroundStyle(Colors.Text.title)
+                        .lineSpacing(4)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.space16)
+            .background(stateModel.isAnalyzingTone ? Colors.Main.cardSurface : stateModel.colorTone.color.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                    .stroke(stateModel.isAnalyzingTone ? Colors.Main.borderSubtle : stateModel.colorTone.color.opacity(0.4), lineWidth: stateModel.isAnalyzingTone ? 1 : 2)
+            )
+            .animation(.easeInOut(duration: 0.25), value: stateModel.isAnalyzingTone)
+            .onboardingReveal(delay: 0.12)
+        }
+
+        // MARK: - C. Refinement Quick-Actions -
+
+        @ViewBuilder
+        private var quickActionsSection: some View {
+            VStack(alignment: .leading, spacing: .space12) {
+                Text("REFINE IT")
+                    .font(Typography.badgeLabel)
+                    .foregroundStyle(Colors.Text.muted)
+
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: .space12), GridItem(.flexible(), spacing: .space12)], spacing: .space12) {
+                    ForEach(RefineAction.allCases) { action in
+                        RefineActionButton(
+                            action: action,
+                            isActive: stateModel.activeAction == action,
+                            isDisabled: stateModel.isRefining
+                        ) {
+                            actions.onSelectAction?(action)
+                        }
+                    }
+                }
+            }
+            .onboardingReveal(delay: 0.18)
+        }
+
+        // MARK: - D. Refined Result Card -
+
+        @ViewBuilder
+        private var resultSection: some View {
+            if stateModel.isRefining && stateModel.refinedText == nil {
+                RefinedResultSkeletonCard()
+            } else if let refinedText = stateModel.refinedText {
+                VStack(alignment: .leading, spacing: .space16) {
+                    HStack {
+                        Text("REFINED VERSION")
+                            .font(Typography.badgeLabel)
+                            .foregroundStyle(Colors.Text.muted)
+
+                        Spacer()
+
+                        if stateModel.isRefining {
+                            BouncingDotsLoader(color: Colors.Main.accent, dotSize: 6)
+                        }
+                    }
+
+                    if stateModel.isEditingResult {
+                        TextField("Edit the refined text...", text: $stateModel.resultEditText, axis: .vertical)
+                            .focused($isResultFieldFocused)
+                            .font(Typography.bodyText)
+                            .foregroundStyle(Colors.Text.title)
+                            .tint(Colors.Main.accent)
+                            .lineLimit(4...12)
+
+                        HStack(spacing: .space12) {
+                            Button {
+                                isResultFieldFocused = false
+                                actions.onCancelEditResult?()
+                            } label: {
+                                Text("Cancel")
+                                    .font(Typography.smallBody.weight(.bold))
+                                    .foregroundStyle(Colors.Text.muted)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Colors.Main.background)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                                    )
+                            }
+
+                            Button {
+                                isResultFieldFocused = false
+                                actions.onSaveEditResult?()
+                            } label: {
+                                Text("Save")
+                                    .font(Typography.smallBody.weight(.bold))
+                                    .foregroundStyle(Colors.Main.accent.contrastingForeground)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Colors.Main.accent)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                    } else {
+                        Text(refinedText)
+                            .font(Typography.bodyText)
+                            .foregroundStyle(Colors.Text.title)
+                            .lineSpacing(4)
+                            .opacity(stateModel.isRefining ? 0.5 : 1)
+
+                        HStack(spacing: .space12) {
+                            Button {
+                                actions.onStartEditResult?()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    isResultFieldFocused = true
+                                }
+                            } label: {
+                                HStack(spacing: .space6) {
+                                    Image(systemName: "pencil")
+                                    Text("Edit")
+                                }
+                                .font(Typography.smallBody.weight(.bold))
+                                .foregroundStyle(Colors.Main.accent)
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, .space16)
+                                .background(Colors.Main.cardSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Colors.Main.accent.opacity(0.4), lineWidth: 1)
+                                )
+                            }
+                            .disabled(stateModel.isRefining)
+
+                            Button {
+                                actions.onCopy?()
+                            } label: {
+                                ZStack {
+                                    HStack(spacing: .space6) {
+                                        Image(systemName: "checkmark")
+                                        Text("Copied!")
+                                    }
+                                    .opacity(stateModel.isCopied ? 1 : 0)
+
+                                    HStack(spacing: .space6) {
+                                        Image(systemName: "doc.on.doc")
+                                        Text("Copy Message")
+                                    }
+                                    .opacity(stateModel.isCopied ? 0 : 1)
+                                }
+                                .font(Typography.primaryButton)
+                                .foregroundStyle(Colors.Main.accent.contrastingForeground)
+                            }
+                            .buttonStyle(LiquidGlassCTAButtonStyle(tint: Colors.Main.accent, verticalPadding: .space12))
+                            .disabled(stateModel.isRefining)
+                        }
+                    }
+                }
+                .padding(.space16)
+                .background(Colors.Main.cardSurface)
+                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
+                        .stroke(Colors.Main.accent, lineWidth: 2)
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .top)))
             }
         }
     }

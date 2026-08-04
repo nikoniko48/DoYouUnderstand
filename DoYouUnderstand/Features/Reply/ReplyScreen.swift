@@ -68,102 +68,12 @@ extension ReplyScreen {
                                 .frame(height: 0)
                                 .id(Self.topAnchorID)
 
-                            // MARK: - Tone Detected Card
                             if let toneAnalysis = stateModel.originalTone {
-                                VStack(alignment: .leading, spacing: .space16) {
-                                    Text("ORIGINAL TONE DETECTED")
-                                        .font(Typography.badgeLabel)
-                                        .foregroundStyle(Colors.Text.muted)
-
-                                    HStack(spacing: .space12) {
-                                        Text(toneAnalysis.tone.displayName.uppercased())
-                                            .font(Typography.badgeLabel)
-                                            .foregroundStyle(toneAnalysis.tone.color)
-                                            .padding(.horizontal, .space12)
-                                            .padding(.vertical, .space6)
-                                            .background(toneAnalysis.tone.color.opacity(0.15))
-                                            .clipShape(Capsule())
-                                            .overlay(Capsule().stroke(toneAnalysis.tone.color.opacity(0.4), lineWidth: 1))
-
-                                        GeometryReader { geo in
-                                            Capsule()
-                                                .fill(Colors.Main.borderSubtle)
-                                                .overlay(alignment: .leading) {
-                                                    Capsule()
-                                                        .fill(toneAnalysis.tone.color)
-                                                        .frame(width: geo.size.width * CGFloat(toneAnalysis.score) / 100)
-                                                }
-                                        }
-                                        .frame(height: 6)
-
-                                        Text("\(toneAnalysis.score)%")
-                                            .font(Typography.badgeLabel)
-                                            .foregroundStyle(toneAnalysis.tone.color)
-                                    }
-
-                                    Text(toneAnalysis.quote)
-                                        .font(Typography.bodyText)
-                                        .foregroundStyle(Colors.Text.muted)
-                                        .lineSpacing(4)
-                                }
-                                .padding(.space16)
-                                .glassEffect(.regular.tint(toneAnalysis.tone.color.opacity(0.1)), in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
+                                toneDetectedCard(toneAnalysis)
                             }
 
-                            // MARK: - Generate A Specific Tone
-                            if !stateModel.availableTones.isEmpty {
-                                VStack(alignment: .leading, spacing: .space12) {
-                                    Text("GENERATE A SPECIFIC TONE")
-                                        .font(Typography.badgeLabel)
-                                        .foregroundStyle(Colors.Text.muted)
-
-                                    FlowLayout(horizontalSpacing: .space8, verticalSpacing: .space8) {
-                                        ForEach(stateModel.availableTones, id: \.self) { tone in
-                                            Button {
-                                                actions.onGenerateTone?(tone)
-                                            } label: {
-                                                Text(tone.displayName)
-                                                    .font(Typography.smallBody.weight(.bold))
-                                                    .foregroundStyle(tone.color)
-                                                    .padding(.horizontal, .space12)
-                                                    .padding(.vertical, .space6)
-                                                    .background(tone.color.opacity(0.15))
-                                                    .clipShape(Capsule())
-                                                    .overlay(Capsule().stroke(tone.color.opacity(0.4), lineWidth: 1))
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                HStack(spacing: .space8) {
-                                    Image(systemName: "checkmark.seal.fill")
-                                    Text("That's every tone we've got!")
-                                }
-                                .font(Typography.smallBody.weight(.bold))
-                                .foregroundStyle(Colors.Text.muted)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
-                            }
-
-                            // MARK: - Reply Options Cards
-                            VStack(spacing: .space16) {
-                                ForEach(stateModel.pendingTones, id: \.self) { tone in
-                                    ReplyOptionSkeletonCard(tone: tone)
-                                        .transition(
-                                            .asymmetric(
-                                                insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top)),
-                                                removal: .opacity
-                                            )
-                                        )
-                                }
-
-                                ForEach($stateModel.options) { $option in
-                                    ReplyOptionCard(option: $option, actions: actions)
-                                }
-                            }
-                            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: stateModel.pendingTones)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: stateModel.options)
+                            generateToneSection
+                            optionsListSection
 
                             Spacer()
                         }
@@ -230,6 +140,113 @@ extension ReplyScreen {
                 Text(LocalizedStringKey(stateModel.errorMessage ?? ""))
             }
         }
+
+        // MARK: - Tone Detected Card -
+
+        @ViewBuilder
+        private func toneDetectedCard(_ toneAnalysis: ReplyViewModel.StateModel.ToneAnalysis) -> some View {
+            VStack(alignment: .leading, spacing: .space16) {
+                Text("ORIGINAL TONE DETECTED")
+                    .font(Typography.badgeLabel)
+                    .foregroundStyle(Colors.Text.muted)
+
+                HStack(spacing: .space12) {
+                    Text(toneAnalysis.tone.displayName.uppercased())
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(toneAnalysis.tone.color)
+                        .padding(.horizontal, .space12)
+                        .padding(.vertical, .space6)
+                        .background(toneAnalysis.tone.color.opacity(0.15))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(toneAnalysis.tone.color.opacity(0.4), lineWidth: 1))
+
+                    GeometryReader { geo in
+                        Capsule()
+                            .fill(Colors.Main.borderSubtle)
+                            .overlay(alignment: .leading) {
+                                Capsule()
+                                    .fill(toneAnalysis.tone.color)
+                                    .frame(width: geo.size.width * CGFloat(toneAnalysis.score) / 100)
+                            }
+                    }
+                    .frame(height: 6)
+
+                    Text("\(toneAnalysis.score)%")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(toneAnalysis.tone.color)
+                }
+
+                Text(toneAnalysis.quote)
+                    .font(Typography.bodyText)
+                    .foregroundStyle(Colors.Text.muted)
+                    .lineSpacing(4)
+            }
+            .padding(.space16)
+            .glassEffect(.regular.tint(toneAnalysis.tone.color.opacity(0.1)), in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
+        }
+
+        // MARK: - Generate A Specific Tone -
+
+        @ViewBuilder
+        private var generateToneSection: some View {
+            if !stateModel.availableTones.isEmpty {
+                VStack(alignment: .leading, spacing: .space12) {
+                    Text("GENERATE A SPECIFIC TONE")
+                        .font(Typography.badgeLabel)
+                        .foregroundStyle(Colors.Text.muted)
+
+                    FlowLayout(horizontalSpacing: .space8, verticalSpacing: .space8) {
+                        ForEach(stateModel.availableTones, id: \.self) { tone in
+                            Button {
+                                actions.onGenerateTone?(tone)
+                            } label: {
+                                Text(tone.displayName)
+                                    .font(Typography.smallBody.weight(.bold))
+                                    .foregroundStyle(tone.color)
+                                    .padding(.horizontal, .space12)
+                                    .padding(.vertical, .space6)
+                                    .background(tone.color.opacity(0.15))
+                                    .clipShape(Capsule())
+                                    .overlay(Capsule().stroke(tone.color.opacity(0.4), lineWidth: 1))
+                            }
+                        }
+                    }
+                }
+            } else {
+                HStack(spacing: .space8) {
+                    Image(systemName: "checkmark.seal.fill")
+                    Text("That's every tone we've got!")
+                }
+                .font(Typography.smallBody.weight(.bold))
+                .foregroundStyle(Colors.Text.muted)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
+            }
+        }
+
+        // MARK: - Reply Options Cards -
+
+        @ViewBuilder
+        private var optionsListSection: some View {
+            VStack(spacing: .space16) {
+                ForEach(stateModel.pendingTones, id: \.self) { tone in
+                    ReplyOptionSkeletonCard(tone: tone)
+                        .transition(
+                            .asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top)),
+                                removal: .opacity
+                            )
+                        )
+                }
+
+                ForEach($stateModel.options) { $option in
+                    ReplyOptionCard(option: $option, actions: actions)
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: stateModel.pendingTones)
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: stateModel.options)
+        }
     }
 }
 
@@ -284,7 +301,7 @@ extension ReplyScreen {
         @Binding var option: ReplyViewModel.StateModel.ReplyOption
         let actions: ReplyViewModel.Actions
         @FocusState private var isFocused: Bool
-            
+
         var body: some View {
             VStack(alignment: .leading, spacing: .space16) {
                 // Header
@@ -295,7 +312,7 @@ extension ReplyScreen {
                         .font(Theme.Typography.bodyText.weight(.bold))
                         .foregroundStyle(option.tone.color)
                 }
-                
+
                 // Content Switcher
                 if option.isEditing {
                     // MARK: Edit Mode
@@ -314,7 +331,7 @@ extension ReplyScreen {
                                 .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
                         )
                         .transition(.scale)
-                    
+
                     // Edit Actions
                     HStack(spacing: .space12) {
                         Button {
@@ -333,7 +350,7 @@ extension ReplyScreen {
                                         .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
                                 )
                         }
-                        
+
                         Button {
                             isFocused = false
                             actions.onSaveEdit?(option.id)
@@ -348,7 +365,7 @@ extension ReplyScreen {
                         }
                     }
                     .transition(.opacity)
-                    
+
                 } else {
                     // MARK: View Mode
                     Text(option.text)
@@ -356,7 +373,7 @@ extension ReplyScreen {
                         .foregroundStyle(Theme.Colors.Text.title)
                         .lineSpacing(4)
                         .transition(.opacity)
-                    
+
                     HStack(spacing: .space12) {
                         Button {
                             actions.onStartEdit?(option.id)
