@@ -118,23 +118,34 @@ extension TonePaletteChoice {
             .dismissive: Color(red: 0.718, green: 0.800, blue: 0.878),
             .savage: Color(red: 0.945, green: 0.612, blue: 0.612)
         ],
+        // Previously just "Classic with the saturation turned up" - since it
+        // largely reused Classic's own hue choices (including Classic's
+        // muted grays for apologetic/blunt/dismissive), the two converged
+        // once `adjustedForContrast` darkened both for Light theme, reading
+        // as barely different. This is now a fully separate visual language:
+        // all 16 tones sit at max saturation/brightness (true neon primaries,
+        // never a muted/gray tone) and are spaced exactly 22.5° apart around
+        // the full hue wheel, so every tone is maximally distinct from every
+        // other - and from Classic's clustered, medium-saturation hues -
+        // regardless of which ones `adjustedForContrast` ends up darkening
+        // for legibility on a given background.
         .neon: [
-            .anxious: Color(red: 0.690, green: 0.149, blue: 1.0),
-            .condescending: Color(red: 1.0, green: 0.722, blue: 0.0),
-            .overEager: Color(red: 0.0, green: 1.0, blue: 0.612),
-            .passiveAggressive: Color(red: 0.776, green: 1.0, blue: 0.0),
-            .sarcastic: Color(red: 1.0, green: 0.063, blue: 0.325),
-            .professional: Color(red: 0.0, green: 0.639, blue: 1.0),
-            .assertive: Color(red: 0.482, green: 0.184, blue: 1.0),
-            .friendly: Color(red: 0.0, green: 0.898, blue: 1.0),
-            .playful: Color(red: 0.957, green: 0.0, blue: 0.957),
-            .apologetic: Color(red: 0.431, green: 0.776, blue: 1.0),
-            .empathetic: Color(red: 1.0, green: 0.420, blue: 0.616),
-            .blunt: Color(red: 0.839, green: 0.839, blue: 1.0),
-            .flirty: Color(red: 1.0, green: 0.180, blue: 0.624),
-            .diplomatic: Color(red: 0.0, green: 1.0, blue: 0.784),
-            .dismissive: Color(red: 0.498, green: 0.659, blue: 1.0),
-            .savage: Color(red: 1.0, green: 0.0, blue: 0.129)
+            .savage: Color(red: 1.0, green: 0.0, blue: 0.0),
+            .sarcastic: Color(red: 1.0, green: 0.375, blue: 0.0),
+            .condescending: Color(red: 1.0, green: 0.75, blue: 0.0),
+            .passiveAggressive: Color(red: 0.875, green: 1.0, blue: 0.0),
+            .overEager: Color(red: 0.5, green: 1.0, blue: 0.0),
+            .diplomatic: Color(red: 0.125, green: 1.0, blue: 0.0),
+            .friendly: Color(red: 0.0, green: 1.0, blue: 0.25),
+            .empathetic: Color(red: 0.0, green: 1.0, blue: 0.625),
+            .apologetic: Color(red: 0.0, green: 1.0, blue: 1.0),
+            .dismissive: Color(red: 0.0, green: 0.625, blue: 1.0),
+            .professional: Color(red: 0.0, green: 0.25, blue: 1.0),
+            .assertive: Color(red: 0.125, green: 0.0, blue: 1.0),
+            .anxious: Color(red: 0.5, green: 0.0, blue: 1.0),
+            .playful: Color(red: 0.875, green: 0.0, blue: 1.0),
+            .flirty: Color(red: 1.0, green: 0.0, blue: 0.75),
+            .blunt: Color(red: 1.0, green: 0.0, blue: 0.375)
         ],
         // .mono is handled separately by `monoColor(for:)` (3 theme-aware
         // tiers instead of 16 hand-picked grays) - no entry needed here.
