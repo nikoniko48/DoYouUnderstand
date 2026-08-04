@@ -8,10 +8,20 @@
 import Foundation
 
 /// A silent, generous daily cap on Gemini-backed calls (explain, reply,
-/// tweak, generate-more-tones) - not a visible "N free scans" quota. The
-/// intent is purely to stop a single spamming/abusive user from burning
-/// through the Gemini budget, not to ration normal usage, so `dailyLimit`
-/// deliberately never appears in any user-facing copy.
+/// tweak, generate-more-tones, refine-analyze, refine-transform) - not a
+/// visible "N free scans" quota. The intent is purely to stop a single
+/// spamming/abusive user from burning through the Gemini budget, not to
+/// ration normal usage, so `dailyLimit` deliberately never appears in any
+/// user-facing copy.
+///
+/// This is a fast, local, `UserDefaults`-based PRE-check only - it lets a
+/// well-behaved user see the "come back tomorrow" message instantly, without
+/// a network round trip, once they hit the cap in the current install. It is
+/// NOT the real enforcement: `UserDefaults` resets on an app reinstall, so
+/// the authoritative limit lives server-side in the `analyze-message` Edge
+/// Function's `usage_limits` table, keyed by `DeviceIdentifier` (a
+/// Keychain-persisted UUID that survives reinstall). Keep this value in sync
+/// with `DAILY_USAGE_LIMIT` in `supabase/functions/analyze-message/index.ts`.
 enum UsageLimiter {
 
     private static let dailyLimit = 30
@@ -20,7 +30,14 @@ enum UsageLimiter {
     private static let dateKey = "usageLimiterDate"
 
     static var isAtDailyLimit: Bool {
-        currentCount() >= dailyLimit
+        #if DEBUG
+        // Local dev builds shouldn't ever get stopped by this client-side
+        // pre-check while testing - the server-side cap in the Edge
+        // Function (keyed by `DeviceIdentifier`) still applies regardless.
+        return false
+        #else
+        return currentCount() >= dailyLimit
+        #endif
     }
 
     static func recordUsage() {

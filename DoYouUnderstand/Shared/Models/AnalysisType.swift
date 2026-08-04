@@ -8,6 +8,7 @@
 enum AnalysisType: String, Codable {
     case explain
     case reply
+    case refine
 
     /// Localized display name - `rawValue` itself stays the fixed English
     /// case name (it's the `Codable` key persisted in on-device history
@@ -16,6 +17,7 @@ enum AnalysisType: String, Codable {
         switch self {
         case .explain: return Loc.t("Explanation")
         case .reply: return Loc.t("Reply")
+        case .refine: return Loc.t("Refine")
         }
     }
 }

@@ -33,12 +33,7 @@ struct ThemeSettingsScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    viewModel.actions.onTapBack?()
-                } label: {
-                    Image(systemName: "chevron.backward")
-                }
-                .accessibilityIdentifier("backButton")
+                BackButton { viewModel.actions.onTapBack?() }
             }
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: .space2) {
@@ -112,6 +107,7 @@ extension ThemeSettingsScreen {
                 .padding(.top, .space16)
                 .padding(.bottom, .space24)
             }
+            .scrollIndicators(.hidden)
         }
     }
 }

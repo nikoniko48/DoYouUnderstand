@@ -73,7 +73,9 @@ extension ReplyViewModel {
             case .shorten:
                 return "Make this exact response shorter and more concise while keeping the exact same tone."
             case .lengthen:
-                return "Make this exact response longer and more detailed while keeping the exact same tone."
+                return "Rewrite this exact response to be noticeably longer - it must have meaningfully more words " +
+                    "than the original. Keep the exact same meaning and tone; add length only by elaborating on " +
+                    "what's already there, never by introducing new points."
             }
         }
     }
@@ -255,6 +257,11 @@ extension ReplyViewModel {
                     self.stateModel.options[idx].text = newText
                     self.stateModel.options[idx].isRegenerating = false
                 }
+            } catch GeminiService.ServiceError.rateLimited {
+                if let idx = self.stateModel.options.firstIndex(where: { $0.id == id }) {
+                    self.stateModel.options[idx].isRegenerating = false
+                }
+                self.stateModel.limitReachedMessage = UsageLimiter.limitReachedMessage
             } catch {
                 if let idx = self.stateModel.options.firstIndex(where: { $0.id == id }) {
                     self.stateModel.options[idx].isRegenerating = false
@@ -270,7 +277,7 @@ extension ReplyViewModel {
         return "Shift this reply \(percent)% towards \(label)."
     }
 
-    /// The Tweak panel's `[ PL | EN ]` toggle - flips just this one card's
+    /// The Tweak panel's `[ AUTO | EN ]` toggle - flips just this one card's
     /// active language and regenerates its text to match, keeping the same
     /// tone. Session-only: it never touches `ReplyLanguagePreferenceStore`,
     /// so the global Settings default is untouched.
@@ -298,6 +305,11 @@ extension ReplyViewModel {
                     self.stateModel.options[idx].text = newText
                     self.stateModel.options[idx].isRegenerating = false
                 }
+            } catch GeminiService.ServiceError.rateLimited {
+                if let idx = self.stateModel.options.firstIndex(where: { $0.id == id }) {
+                    self.stateModel.options[idx].isRegenerating = false
+                }
+                self.stateModel.limitReachedMessage = UsageLimiter.limitReachedMessage
             } catch {
                 if let idx = self.stateModel.options.firstIndex(where: { $0.id == id }) {
                     self.stateModel.options[idx].isRegenerating = false
@@ -332,6 +344,9 @@ extension ReplyViewModel {
                 var newOption = StateModel.ReplyOption(tone: tone, text: replyText)
                 newOption.activeLanguage = ReplyLanguage.detected(from: replyText)
                 self.stateModel.options.insert(newOption, at: 0)
+            } catch GeminiService.ServiceError.rateLimited {
+                self.stateModel.pendingTones.removeAll { $0 == tone }
+                self.stateModel.limitReachedMessage = UsageLimiter.limitReachedMessage
             } catch {
                 self.stateModel.pendingTones.removeAll { $0 == tone }
                 self.stateModel.errorMessage = "Couldn't generate that tone. Please try again."

@@ -13,6 +13,7 @@ enum Route: Hashable {
     case input
     case explenation(ExplanationViewModel.Destination)
     case reply(ReplyViewModel.Destination)
+    case refine(RefineViewModel.Destination)
     case faq
     case settings
     case themeSettings
@@ -48,6 +49,7 @@ extension NavigationManager {
         case input(InputViewModel.Output)
         case explanation(ExplanationViewModel.Output)
         case reply(ReplyViewModel.Output)
+        case refine(RefineViewModel.Output)
         case faq(FAQViewModel.Output)
         case settings(SettingsViewModel.Output)
         case themeSettings(ThemeSettingsViewModel.Output)
@@ -67,6 +69,8 @@ extension NavigationManager {
             handleExplanation(output)
         case .reply(let output):
             handleReply(output)
+        case .refine(let output):
+            handleRefine(output)
         case .faq(let output):
             handleFAQ(output)
         case .settings(let output):
@@ -92,6 +96,8 @@ extension NavigationManager {
             navigate(to: .explenation(.history(id: id)))
         case .reply(let id):
             navigate(to: .reply(.history(id: id)))
+        case .refine(let id):
+            navigate(to: .refine(.history(id: id)))
         case .faq:
             navigate(to: .faq)
         case .settings:
@@ -107,9 +113,11 @@ extension NavigationManager {
             navigate(to: .explenation(.result(payload)))
         case .reply(let payload):
             navigate(to: .reply(.result(payload)))
+        case .refine(let text):
+            navigate(to: .refine(.draft(text)))
         }
     }
-    
+
     func handleExplanation(_ output: ExplanationViewModel.Output) {
         switch output {
         case .goBack:
@@ -120,6 +128,13 @@ extension NavigationManager {
     }
 
     func handleReply(_ output: ReplyViewModel.Output) {
+        switch output {
+        case .goBack:
+            popToRoot()
+        }
+    }
+
+    func handleRefine(_ output: RefineViewModel.Output) {
         switch output {
         case .goBack:
             popToRoot()

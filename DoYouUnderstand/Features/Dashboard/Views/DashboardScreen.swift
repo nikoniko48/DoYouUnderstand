@@ -120,7 +120,21 @@ extension DashboardScreen {
                                     HistoryCardView(item: item)
                                 }
                                 .buttonStyle(.plain)
-                                .listRowInsets(EdgeInsets())
+                                // Paired with the List's own `-16` horizontal
+                                // padding below: the List's frame is widened
+                                // by exactly as much as this insets the row,
+                                // so the card lands at the same size/position
+                                // it always had, but with real clip-safe
+                                // margin around it - both for the card's own
+                                // native glass shadow (barely visible in Dark/
+                                // Terminal, but clipped hard on the sides in
+                                // Light, where it actually shows) and for the
+                                // press-and-hold grow. The original 8pt was
+                                // only ever sized for the grow, never the
+                                // shadow, so it clipped the shadow on the
+                                // sides the same way the top used to clip it
+                                // before `contentMargins` above fixed that.
+                                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
                                 .padding(.bottom, .space12)
@@ -136,6 +150,36 @@ extension DashboardScreen {
                         .listStyle(.plain)
                         .scrollContentBackground(.hidden)
                         .environment(\.defaultMinListRowHeight, 0)
+                        .scrollIndicators(.hidden)
+                        // The glass cards' own native ambient shadow rendered
+                        // with nowhere to bleed into above the very first
+                        // row - the List's clip boundary sat flush against
+                        // the top of that row, chopping the shadow off in a
+                        // hard line instead of letting it fade out softly
+                        // (this read as much harsher/less subtle than the
+                        // same shadow rendered whole, especially obvious
+                        // against Light theme's near-white background).
+                        // `contentMargins` insets the *scrollable content*
+                        // specifically - unlike outer `.padding`, which would
+                        // just move the List's own clip boundary along with
+                        // its content and never actually create breathing
+                        // room inside it.
+                        .contentMargins(.top, .space16, for: .scrollContent)
+                        // Widens the List's own frame 16pt past the outer
+                        // VStack's `screenPadding` on each side - paired
+                        // with the matching `listRowInsets` above, the card
+                        // itself ends up in exactly the same place it was
+                        // before, just with real margin between it and the
+                        // List's clip boundary now.
+                        //
+                        // `.scrollClipDisabled()` used to live here to stop
+                        // the List from slicing the glass cards' rounded
+                        // corners on the sides - but it disables ALL
+                        // clipping, not just horizontal, which let rows
+                        // scroll up and render on top of the fixed header
+                        // above the List. This fixes the side-clipping
+                        // without needing that.
+                        .padding(.horizontal, -16)
                         .refreshable {
                             actions.onRefresh?()
                         }
@@ -152,8 +196,8 @@ extension DashboardScreen {
                             .font(Typography.hugeTitle)
                             .foregroundStyle(Colors.Main.accent.contrastingForeground)
                             .frame(width: StaticData.Layout.floatingButtonSize.height, height: StaticData.Layout.floatingButtonSize.width)
-                            .background(Colors.Main.accent)
-                            .clipShape(Circle())
+                            .glassEffect(.regular.tint(Colors.Main.accent).interactive(), in: Circle())
+                            .contentShape(Circle())
                     }
                     .accessibilityIdentifier("newAnalysisButton")
                     .padding(.bottom, .space12)

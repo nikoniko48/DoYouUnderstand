@@ -36,12 +36,7 @@ struct InputScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    viewModel.actions.onTap?(.back)
-                } label: {
-                    Image(systemName: "chevron.backward")
-                }
-                .accessibilityIdentifier("backButton")
+                BackButton { viewModel.actions.onTap?(.back) }
             }
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: .space2) {
@@ -66,6 +61,10 @@ extension InputScreen {
         let actions: InputViewModel.Actions
 
         @FocusState private var isFocused: Bool
+
+        private var ctaTitle: String {
+            stateModel.selectedType == .refine ? "Refine Message" : "Analyze input"
+        }
 
         var body: some View {
             ScrollView {
@@ -217,23 +216,43 @@ extension InputScreen {
                                 .font(Typography.badgeLabel)
                                 .foregroundStyle(Colors.Text.muted)
                             
-                            HStack(spacing: .space12) {
-                                SelectionCard(
-                                    emoji: "🔎",
-                                    title: "Explanation",
-                                    subtitle: "Decode what they meant",
-                                    isSelected: stateModel.selectedType == .explain
-                                ) {
-                                    actions.onTap?(.explain)
+                            VStack(spacing: .space12) {
+                                HStack(spacing: .space12) {
+                                    SelectionCard(
+                                        icon: "magnifyingglass",
+                                        iconColor: Colors.Tone.diplomatic,
+                                        title: "Explanation",
+                                        subtitle: "Decode what they meant",
+                                        isSelected: stateModel.selectedType == .explain
+                                    ) {
+                                        actions.onTap?(.explain)
+                                    }
+
+                                    SelectionCard(
+                                        icon: "bubble.left.and.bubble.right.fill",
+                                        // Kept in sync with `HistoryItem.typeColor`.
+                                        iconColor: Colors.Tone.professional,
+                                        title: "Reply",
+                                        subtitle: "Craft your response",
+                                        isSelected: stateModel.selectedType == .reply
+                                    ) {
+                                        actions.onTap?(.reply)
+                                    }
                                 }
-                                
+
                                 SelectionCard(
-                                    emoji: "✍️",
-                                    title: "Reply",
-                                    subtitle: "Craft your response",
-                                    isSelected: stateModel.selectedType == .reply
+                                    icon: "wand.and.stars",
+                                    // Kept in sync with `HistoryItem.typeColor` -
+                                    // `.professional` is now Reply's color,
+                                    // so Refine uses this warm orange instead
+                                    // to stay clearly distinct from it.
+                                    iconColor: Colors.Tone.condescending,
+                                    title: "Refine",
+                                    subtitle: "Polish your own draft",
+                                    isSelected: stateModel.selectedType == .refine,
+                                    isCompact: true
                                 ) {
-                                    actions.onTap?(.reply)
+                                    actions.onTap?(.refine)
                                 }
                             }
                         }
@@ -243,6 +262,7 @@ extension InputScreen {
                     .padding(.horizontal, StaticData.Layout.screenPadding)
                     .padding(.top, .space16)
                 }
+            .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.interactively)
             // MARK: - SUBMIT BUTTON -
             .safeAreaInset(edge: .bottom) {
@@ -250,8 +270,8 @@ extension InputScreen {
                     actions.onAnalyse?()
                 } label: {
                     HStack(spacing: .space8) {
-                        Image(systemName: "bolt.fill")
-                        Text("Analyze input")
+                        Image(systemName: stateModel.selectedType == .refine ? "sparkles" : "bolt.fill")
+                        Text(LocalizedStringKey(ctaTitle))
                     }
                     .font(Typography.primaryButton)
                     .foregroundStyle(stateModel.isAnalysisEnabled ? Colors.Main.accent.contrastingForeground : Colors.Text.muted)
@@ -385,40 +405,81 @@ extension InputScreen {
     }
     
     struct SelectionCard: View {
-        let emoji: String
+        let icon: String
+        /// A specific, fixed `Theme.Colors.Tone.*` color chosen per mode
+        /// purely for a nice-looking icon tint - unrelated to any detected
+        /// tone, just reusing the app's existing tone palette so the icon
+        /// still re-skins live with `TonePaletteChoice`.
+        let iconColor: Color
         let title: String
         let subtitle: String
         let isSelected: Bool
+        /// The 2-up Explain/Reply cards use a tall, centered layout - fine
+        /// when two sit side by side, but the same layout stretched across
+        /// a lone full-width row (Refine) reads as oversized. Compact mode
+        /// keeps the same visual language in a slimmer horizontal row.
+        var isCompact: Bool = false
         let action: () -> Void
-        
+
+        private var shape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+        }
+
         var body: some View {
             Button(action: action) {
-                VStack(spacing: .space8) {
-                    Text(emoji)
-                        .font(.system(size: 28))
-                        .padding(.bottom, .space4)
-                    
-                    Text(LocalizedStringKey(title))
-                        .font(Typography.bodyText.weight(.bold))
-                        .foregroundStyle(isSelected ? Colors.Main.primary : Colors.Text.title)
+                Group {
+                    if isCompact {
+                        HStack(spacing: .space12) {
+                            Image(systemName: icon)
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(iconColor)
+                                .frame(width: 28)
 
-                    Text(LocalizedStringKey(subtitle))
-                        .font(Typography.smallBody)
-                        .foregroundStyle(Colors.Text.muted)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(LocalizedStringKey(title))
+                                    .font(Typography.bodyText.weight(.bold))
+                                    .foregroundStyle(isSelected ? Colors.Main.primary : Colors.Text.title)
+
+                                Text(LocalizedStringKey(subtitle))
+                                    .font(Typography.smallBody)
+                                    .foregroundStyle(Colors.Text.muted)
+                            }
+
+                            Spacer(minLength: .space0)
+                        }
+                        .padding(.vertical, .space12)
+                        .padding(.horizontal, .space16)
+                    } else {
+                        VStack(spacing: .space8) {
+                            Image(systemName: icon)
+                                .font(.system(size: 26, weight: .semibold))
+                                .foregroundStyle(iconColor)
+                                .padding(.bottom, .space4)
+
+                            Text(LocalizedStringKey(title))
+                                .font(Typography.bodyText.weight(.bold))
+                                .foregroundStyle(isSelected ? Colors.Main.primary : Colors.Text.title)
+                                .multilineTextAlignment(.center)
+
+                            Text(LocalizedStringKey(subtitle))
+                                .font(Typography.smallBody)
+                                .foregroundStyle(Colors.Text.muted)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.vertical, 24)
+                        .padding(.horizontal, .space8)
+                        .frame(maxHeight: .infinity)
+                    }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 24)
-                .padding(.horizontal, .space8)
-                .background(isSelected ? Colors.Main.primary.opacity(0.05) : Colors.Main.cardSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(
-                            isSelected ? Colors.Main.primary : Colors.Main.borderSubtle,
-                            lineWidth: isSelected ? 2 : 1
-                        )
-                )
             }
+            .buttonStyle(
+                GlassSelectionButtonStyle(
+                    shape: shape,
+                    isSelected: isSelected,
+                    tintColor: Colors.Main.primary
+                )
+            )
         }
     }
 }

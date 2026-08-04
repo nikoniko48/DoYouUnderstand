@@ -32,6 +32,11 @@ final class MockHistoryService: HistoryServiceProtocol {
         return record
     }
 
+    func update(id: String, payload: HistoryPayload) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+        records[index] = HistoryRecord(id: id, timestamp: records[index].timestamp, payload: payload)
+    }
+
     func delete(id: String) {
         records.removeAll { $0.id == id }
     }
@@ -189,6 +194,18 @@ extension MockHistoryService {
                     meant: "I am furious that we aren't doing it my way, and I'm going to make you feel extremely guilty about it.",
                     subtext: "\"You are selfish and ruined my plans.\"",
                     eli5: "They are acting like it's fine, but they are secretly pouting because they didn't get their way."
+                )
+            )
+        ),
+        HistoryRecord(
+            id: "mock_8",
+            timestamp: Date().addingTimeInterval(-3 * 24 * 60 * 60),
+            payload: .refine(
+                RefineViewModel.Payload(
+                    originalMessage: "Hey, sorry to bother you again but I was just wondering if maybe you had a chance to look at that thing I sent over? No worries if not!",
+                    tone: "Overly Apologetic",
+                    colorTone: .apologetic,
+                    summary: "Comes across as unsure of yourself - the reader may not take the request seriously."
                 )
             )
         )

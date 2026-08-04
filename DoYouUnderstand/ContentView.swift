@@ -47,6 +47,10 @@ struct ContentView: View {
                     ReplyScreen(destination: destination) { output in
                         router.handle(.reply(output))
                     }
+                case .refine(let destination):
+                    RefineScreen(destination: destination) { output in
+                        router.handle(.refine(output))
+                    }
                 case .faq:
                     FAQScreen { output in
                         router.handle(.faq(output))

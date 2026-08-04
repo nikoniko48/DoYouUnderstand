@@ -28,12 +28,7 @@ struct ProfileScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    viewModel.actions.onTapBack?()
-                } label: {
-                    Image(systemName: "chevron.backward")
-                }
-                .accessibilityIdentifier("backButton")
+                BackButton { viewModel.actions.onTapBack?() }
             }
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: .space2) {
@@ -130,12 +125,7 @@ extension ProfileScreen {
                         .autocorrectionDisabled()
                         .focused($isNameFieldFocused)
                         .padding(.space16)
-                        .background(Colors.Main.cardSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                        )
+                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
                     }
                     .onboardingReveal(delay: 0.12)
 
@@ -175,12 +165,7 @@ extension ProfileScreen {
                         }
                     }
                     .padding(.space16)
-                    .background(Colors.Main.cardSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                            .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                    )
+                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
                     .onboardingReveal(delay: 0.19)
 
                     VStack(alignment: .leading, spacing: .space16) {
@@ -209,6 +194,7 @@ extension ProfileScreen {
                 .padding(.top, .space16)
                 .padding(.bottom, .space24)
             }
+            .scrollIndicators(.hidden)
             // Same fix as onboarding's Age step - the vertical ScrollView's
             // default edge clipping sliced the selected gender chip's
             // border on the sides.
@@ -276,11 +262,8 @@ extension ProfileScreen {
                     .font(Theme.Typography.biggerText.weight(.bold))
                     .foregroundStyle(Theme.Colors.Text.title)
                     .frame(width: 44, height: 44)
-                    .background(Theme.Colors.Main.background)
-                    .clipShape(Circle())
-                    .overlay(
-                        Circle().stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
-                    )
+                    .glassEffect(.regular.interactive(), in: Circle())
+                    .contentShape(Circle())
             }
             .disabled(!isEnabled)
             .opacity(isEnabled ? 1 : 0.4)

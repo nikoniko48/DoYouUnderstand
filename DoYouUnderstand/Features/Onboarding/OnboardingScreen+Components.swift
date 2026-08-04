@@ -17,11 +17,33 @@ extension OnboardingScreen {
         var body: some View {
             HStack(spacing: .space8) {
                 ForEach(0..<totalSteps, id: \.self) { index in
-                    Rectangle()
-                        .fill(index <= currentStep ? Theme.Colors.Main.accent : Theme.Colors.Main.cardSurface)
-                        .frame(height: StaticData.Layout.progressBarHeight)
+                    Capsule()
+                        // `cardSurface` was too close to the page
+                        // background to read as a real "unfilled" pip -
+                        // `borderSubtle` plus its own stroke keeps every
+                        // pip visible as a distinct shape even before the
+                        // glass track below gives the whole bar a surface.
+                        .fill(index <= currentStep ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle)
+                        .overlay(
+                            Capsule().stroke(Theme.Colors.Main.borderSubtle, lineWidth: index <= currentStep ? 0 : 1)
+                        )
+                        // The current step's pip pops slightly taller than
+                        // the rest, springing back down as the next step
+                        // takes over - a small bit of life instead of a
+                        // flat instant color-swap. Grown via `.frame(height:)`
+                        // itself rather than `.scaleEffect(y:)` - scaling only
+                        // the Y axis stretched the capsule's already-rounded
+                        // ends into an oval instead of staying round, since a
+                        // transform just distorts the rendered shape rather
+                        // than letting `Capsule` recompute its own corner
+                        // radius at the new size.
+                        .frame(height: index == currentStep ? StaticData.Layout.progressBarHeight * 1.75 : StaticData.Layout.progressBarHeight)
                 }
             }
+            .padding(.vertical, .space6)
+            .padding(.horizontal, .space8)
+            .glassEffect(.regular, in: Capsule())
+            .animation(.spring(response: 0.45, dampingFraction: 0.72), value: currentStep)
         }
     }
 

@@ -28,12 +28,7 @@ struct ManageSubscriptionScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    viewModel.actions.onTapBack?()
-                } label: {
-                    Image(systemName: "chevron.backward")
-                }
-                .accessibilityIdentifier("backButton")
+                BackButton { viewModel.actions.onTapBack?() }
             }
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: .space2) {
@@ -98,12 +93,7 @@ extension ManageSubscriptionScreen {
                         Spacer(minLength: .space8)
                     }
                     .padding(.space16)
-                    .background(Colors.Main.cardSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                            .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                    )
+                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
                     .onboardingReveal(delay: 0.06)
 
                     if stateModel.isProUnlocked {
@@ -118,12 +108,8 @@ extension ManageSubscriptionScreen {
                             .font(Typography.biggerText)
                             .foregroundStyle(Colors.Text.title)
                             .padding(.space16)
-                            .background(Colors.Main.cardSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                    .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                            )
+                            .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
+                            .contentShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
                         }
                         .buttonStyle(.plain)
                         .onboardingReveal(delay: 0.12)
@@ -187,6 +173,7 @@ extension ManageSubscriptionScreen {
                 .padding(.top, .space16)
                 .padding(.bottom, .space24)
             }
+            .scrollIndicators(.hidden)
             // Same fix as onboarding's Theme step - the vertical
             // ScrollView's default edge clipping sliced the selected
             // pricing row's border on the sides.

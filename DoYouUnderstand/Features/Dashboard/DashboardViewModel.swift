@@ -34,6 +34,7 @@ extension DashboardViewModel {
         case input
         case explanation(String) // ✅ Pass ID
         case reply(String)       // ✅ Pass ID
+        case refine(String)      // ✅ Pass ID
         case faq
         case settings
     }
@@ -76,6 +77,8 @@ extension DashboardViewModel {
                 self?.output(.explanation(item.id))
             case .reply:
                 self?.output(.reply(item.id))
+            case .refine:
+                self?.output(.refine(item.id))
             }
         }
 

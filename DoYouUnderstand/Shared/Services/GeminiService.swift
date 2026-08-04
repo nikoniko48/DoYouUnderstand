@@ -14,6 +14,10 @@ enum GeminiService {
     enum ServiceError: Error {
         case invalidResponse
         case server(String)
+        /// The server's own fair-use cap (keyed by `DeviceIdentifier`, not
+        /// the client's local `UsageLimiter` pre-check) rejected this call
+        /// before it ever reached Gemini.
+        case rateLimited
     }
 
     static func explain(text: String, images: [Data]) async throws -> ExplanationViewModel.Payload {
@@ -107,6 +111,39 @@ enum GeminiService {
         let decoded = try JSONDecoder().decode(TweakResponseBody.self, from: data)
         return decoded.text
     }
+
+    /// Analyzes the tone of the user's OWN draft (about to be sent), not a
+    /// received message - `tone` is a short freeform label rather than one
+    /// of the fixed `Tone` cases, since Refine isn't constrained to that
+    /// taxonomy. `colorTone` is a second, separate classification into one
+    /// of the fixed `Tone` cases, purely so the UI can reuse `Tone.color`
+    /// for the card instead of showing everything in one flat color.
+    static func refineAnalyze(text: String) async throws -> RefineAnalysis {
+        let body = AnalyzeRequestBody(mode: "refineAnalyze", text: text, images: [])
+        let data = try await invoke(body)
+        let decoded = try JSONDecoder().decode(RefineAnalyzeResponseBody.self, from: data)
+
+        guard let colorTone = Tone(rawValue: decoded.colorTone) else {
+            throw ServiceError.invalidResponse
+        }
+
+        return RefineAnalysis(tone: decoded.tone, colorTone: colorTone, summary: decoded.summary)
+    }
+
+    static func refineTransform(text: String, action: RefineAction) async throws -> String {
+        let body = AnalyzeRequestBody(mode: "refineTransform", text: text, images: [], action: action.rawValue)
+        let data = try await invoke(body)
+        let decoded = try JSONDecoder().decode(TweakResponseBody.self, from: data)
+        return decoded.text
+    }
+}
+
+extension GeminiService {
+    struct RefineAnalysis {
+        let tone: String
+        let colorTone: Tone
+        let summary: String
+    }
 }
 
 // MARK: - Networking -
@@ -121,6 +158,13 @@ extension GeminiService {
         var tone: String?
         var instruction: String?
         var targetLanguage: String?
+        var action: String?
+        // Not part of the memberwise-style init below - every request gets
+        // these automatically, so no call site needs to think about them.
+        let deviceId: String = DeviceIdentifier.current
+        // `nil` outside of `#if DEBUG` builds, so Release/TestFlight/App
+        // Store requests never carry it - see `DebugBypass`.
+        let debugBypassToken: String? = DebugBypass.token
 
         init(
             mode: String,
@@ -129,7 +173,8 @@ extension GeminiService {
             tones: [String]? = nil,
             tone: String? = nil,
             instruction: String? = nil,
-            targetLanguage: String? = nil
+            targetLanguage: String? = nil,
+            action: String? = nil
         ) {
             self.mode = mode
             self.text = text
@@ -138,6 +183,7 @@ extension GeminiService {
             self.tone = tone
             self.instruction = instruction
             self.targetLanguage = targetLanguage
+            self.action = action
         }
     }
 
@@ -158,12 +204,24 @@ extension GeminiService {
 
             let (data, response) = try await URLSession.shared.data(for: request)
 
-            guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw ServiceError.invalidResponse
+            }
+
+            // The server's own fair-use cap - never worth retrying, since a
+            // fixed daily limit won't un-reject itself a moment later.
+            if httpResponse.statusCode == 429 {
+                throw ServiceError.rateLimited
+            }
+
+            guard (200..<300).contains(httpResponse.statusCode) else {
                 let message = String(data: data, encoding: .utf8) ?? "Unknown error"
                 throw ServiceError.server(message)
             }
 
             return data
+        } catch ServiceError.rateLimited {
+            throw ServiceError.rateLimited
         } catch {
             guard retriesRemaining > 0 else { throw error }
             try? await Task.sleep(nanoseconds: 700_000_000)
@@ -201,5 +259,11 @@ extension GeminiService {
 
     private struct TweakResponseBody: Decodable {
         let text: String
+    }
+
+    private struct RefineAnalyzeResponseBody: Decodable {
+        let tone: String
+        let colorTone: String
+        let summary: String
     }
 }

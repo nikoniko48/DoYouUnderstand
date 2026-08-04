@@ -32,12 +32,7 @@ struct ReplyScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    viewModel.actions.onTapBack?()
-                } label: {
-                    Image(systemName: "chevron.backward")
-                }
-                .accessibilityIdentifier("backButton")
+                BackButton { viewModel.actions.onTapBack?() }
             }
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: .space2) {
@@ -112,12 +107,7 @@ extension ReplyScreen {
                                         .lineSpacing(4)
                                 }
                                 .padding(.space16)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                        .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
+                                .glassEffect(.regular.tint(toneAnalysis.tone.color.opacity(0.1)), in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
                             }
 
                             // MARK: - Generate A Specific Tone
@@ -153,12 +143,7 @@ extension ReplyScreen {
                                 .foregroundStyle(Colors.Text.muted)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Colors.Main.cardSurface)
-                                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                        .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                                )
+                                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
                             }
 
                             // MARK: - Reply Options Cards
@@ -186,6 +171,7 @@ extension ReplyScreen {
                         .padding(.top, .space16)
                         .frame(minHeight: proxy.size.height)
                     }
+                    .scrollIndicators(.hidden)
                     .onScrollGeometryChange(for: CGFloat.self) { geometry in
                         geometry.contentOffset.y
                     } action: { _, newValue in
@@ -278,12 +264,7 @@ extension ReplyScreen {
                 }
             }
             .padding(.space16)
-            .background(Theme.Colors.Main.cardSurface)
-            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                    .stroke(tone.color.opacity(0.3), lineWidth: 1)
-            )
+            .glassEffect(.regular.tint(tone.color.opacity(0.1)), in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
             .onAppear { isPulsing = true }
         }
 
@@ -456,12 +437,7 @@ extension ReplyScreen {
                 }
             }
             .padding(.space16)
-            .background(Theme.Colors.Main.cardSurface)
-            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                    .stroke(option.tone.color.opacity(0.3), lineWidth: 1)
-            )
+            .glassEffect(.regular.tint(option.tone.color.opacity(0.1)), in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
             .animation(.easeInOut(duration: 0.25), value: option.isEditing)
             .animation(.easeInOut(duration: 0.25), value: option.isCopied)
             // No .animation(value: option.isTweaking) here - toggleTweak()
@@ -571,11 +547,8 @@ extension ReplyScreen {
         }
     }
 
-    /// A compact `[ PL | EN ]` segmented toggle for overriding a single
-    /// reply card's language for this session only. `activeLanguage` may be
-    /// `.autoDetect` (the global default, before any override) - neither
-    /// segment highlights in that case, since auto-detect isn't a fixed
-    /// language choice.
+    /// A compact `[ AUTO | EN ]` segmented toggle for overriding a single
+    /// reply card's language for this session only.
     struct LanguageTogglePill: View {
         let activeLanguage: ReplyLanguage
         let isDisabled: Bool
@@ -583,7 +556,7 @@ extension ReplyScreen {
 
         var body: some View {
             HStack(spacing: 2) {
-                segment(.polish, label: "PL")
+                segment(.autoDetect, label: "AUTO")
                 segment(.english, label: "EN")
             }
             .padding(2)

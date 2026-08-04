@@ -31,12 +31,7 @@ struct SettingsScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    viewModel.actions.onTapBack?()
-                } label: {
-                    Image(systemName: "chevron.backward")
-                }
-                .accessibilityIdentifier("backButton")
+                BackButton { viewModel.actions.onTapBack?() }
             }
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: .space2) {
@@ -93,12 +88,11 @@ extension SettingsScreen {
                                 .foregroundStyle(Colors.Text.muted)
                         }
                         .padding(.space16)
-                        .background(Colors.Main.cardSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                .stroke(Colors.Main.borderSubtle, lineWidth: 1)
+                        .glassEffect(
+                            .regular.interactive(),
+                            in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
                         )
+                        .contentShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("settingsProfileRow")
@@ -172,6 +166,7 @@ extension SettingsScreen {
                 .padding(.top, .space16)
                 .padding(.bottom, .space24)
             }
+            .scrollIndicators(.hidden)
             .onAppear {
                 actions.onAppear?()
             }
@@ -190,6 +185,10 @@ extension SettingsScreen {
         let title: String
         let subtitle: String
         let action: () -> Void
+
+        private var shape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+        }
 
         var body: some View {
             Button(action: action) {
@@ -218,12 +217,8 @@ extension SettingsScreen {
                         .foregroundStyle(Theme.Colors.Text.muted)
                 }
                 .padding(.space16)
-                .background(Theme.Colors.Main.cardSurface)
-                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                .overlay(
-                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                        .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
-                )
+                .glassEffect(.regular.interactive(), in: shape)
+                .contentShape(shape)
             }
             .buttonStyle(.plain)
         }

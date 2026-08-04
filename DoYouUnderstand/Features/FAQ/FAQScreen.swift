@@ -31,12 +31,7 @@ struct FAQScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    viewModel.actions.onTapBack?()
-                } label: {
-                    Image(systemName: "chevron.backward")
-                }
-                .accessibilityIdentifier("backButton")
+                BackButton { viewModel.actions.onTapBack?() }
             }
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: .space2) {
@@ -75,6 +70,7 @@ extension FAQScreen {
                 .padding(.top, .space16)
                 .padding(.bottom, .space24)
             }
+            .scrollIndicators(.hidden)
         }
     }
 }
@@ -111,14 +107,15 @@ extension FAQScreen {
                         .foregroundStyle(Theme.Colors.Text.title)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                // `DisclosureGroup`'s tap target otherwise only covers the
+                // icon/text glyphs, not the full label row's empty space.
+                .contentShape(Rectangle())
             }
             .tint(Theme.Colors.Text.muted)
             .padding(.space16)
-            .background(Theme.Colors.Main.cardSurface)
-            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                    .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
+            .glassEffect(
+                .regular.interactive(),
+                in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
             )
         }
     }

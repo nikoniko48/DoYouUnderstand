@@ -15,6 +15,50 @@ extension View {
     func onboardingReveal(delay: Double, from edge: Edge = .leading) -> some View {
         modifier(OnboardingRevealModifier(delay: delay, edge: edge))
     }
+
+    /// Blends scrolled content into the page background near the top edge
+    /// instead of the ScrollView's own hard clip boundary - for onboarding
+    /// steps whose ScrollView sits directly below the shared progress-bar
+    /// header, scrolling content used to just vanish at a flat line the
+    /// instant it reached the ScrollView's top edge, which read as a jarring
+    /// cutout. A background-colored gradient overlay (not a mask - the goal
+    /// is to match the page background, not reveal what's behind it) fades
+    /// that edge smoothly instead. `allowsHitTesting(false)` keeps it from
+    /// blocking scroll gestures underneath.
+    func onboardingScrollTopFade() -> some View {
+        modifier(OnboardingScrollTopFadeModifier())
+    }
+}
+
+private struct OnboardingScrollTopFadeModifier: ViewModifier {
+
+    // The step's own title sits at the very top of the ScrollView's content,
+    // so a fade that's always on would permanently cover part of it even at
+    // rest (nothing scrolled yet, nothing to hide). Only fading it in once
+    // the content has actually scrolled past the top keeps the title fully
+    // visible until there's really something being clipped underneath.
+    @State private var isScrolled = false
+
+    func body(content: Content) -> some View {
+        content
+            .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                geometry.contentOffset.y
+            } action: { _, newValue in
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    isScrolled = newValue > 4
+                }
+            }
+            .overlay(alignment: .top) {
+                LinearGradient(
+                    colors: [Theme.Colors.Main.background, Theme.Colors.Main.background.opacity(0)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 28)
+                .opacity(isScrolled ? 1 : 0)
+                .allowsHitTesting(false)
+            }
+    }
 }
 
 private struct OnboardingRevealModifier: ViewModifier {
@@ -65,11 +109,36 @@ struct OnboardingCountingBar: View, Animatable {
         set { percent = newValue }
     }
 
+    // The un-highlighted "before" bar used to fill with `Main.cardSurface` -
+    // a flat, low-contrast neutral that (next to the highlighted bar's solid
+    // `Main.accent` fill) read as a plain gray-or-white block sitting next
+    // to a plain colored one, not much of a "chart." Tone colors for BOTH
+    // bars (not `Main.accent` for the highlighted one - under Light theme
+    // that's black, and a glass tint of black just renders as a flat gray,
+    // the exact same "blob" problem moved to the other bar) plus the same
+    // tinted-glass recipe used for cards elsewhere in the app gives both
+    // bars real, theme-independent color and the same frosted depth as
+    // everything else, instead of one flat block next to a flat tint.
+    private var barColor: Color {
+        isHighlighted ? Theme.Colors.Tone.empathetic : Theme.Colors.Tone.anxious
+    }
+
+    private var barShape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: 14,
+            bottomLeadingRadius: 0,
+            bottomTrailingRadius: 0,
+            topTrailingRadius: 14,
+            style: .continuous
+        )
+    }
+
     var body: some View {
         VStack(spacing: .space8) {
             Text("\(Int(percent.rounded()))%")
-                .font(Theme.Typography.onboardingBody.weight(.bold))
-                .foregroundStyle(isHighlighted ? Theme.Colors.Main.accent : Theme.Colors.Text.muted)
+                .font(Theme.Typography.spaceGrotesk(size: 26, weight: .heavy))
+                .foregroundStyle(isHighlighted ? barColor : Theme.Colors.Text.muted)
+                .contentTransition(.numericText())
 
             // A fixed-height track holds the layout still - only the fill
             // inside it (anchored to the bottom) grows, so neither the
@@ -78,13 +147,10 @@ struct OnboardingCountingBar: View, Animatable {
                 Color.clear
                     .frame(height: maxHeight)
 
-                UnevenRoundedRectangle(topLeadingRadius: 10, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 10)
-                    .fill(isHighlighted ? Theme.Colors.Main.accent : Theme.Colors.Main.cardSurface)
-                    .overlay(
-                        UnevenRoundedRectangle(topLeadingRadius: 10, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 10)
-                            .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
-                    )
+                Color.clear
                     .frame(height: max(4, maxHeight * CGFloat(percent / 100)))
+                    .glassEffect(.regular.tint(barColor.opacity(0.5)), in: barShape)
+                    .overlay(barShape.stroke(barColor.opacity(0.6), lineWidth: 1.5))
             }
 
             Text(label)

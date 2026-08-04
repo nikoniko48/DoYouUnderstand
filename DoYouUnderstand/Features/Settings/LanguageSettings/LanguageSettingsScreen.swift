@@ -28,12 +28,7 @@ struct LanguageSettingsScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    viewModel.actions.onTapBack?()
-                } label: {
-                    Image(systemName: "chevron.backward")
-                }
-                .accessibilityIdentifier("backButton")
+                BackButton { viewModel.actions.onTapBack?() }
             }
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: .space2) {
@@ -72,12 +67,7 @@ extension LanguageSettingsScreen {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.space16)
-                    .background(Colors.Main.secondaryAccent.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                            .stroke(Colors.Main.secondaryAccent.opacity(0.3), lineWidth: 1)
-                    )
+                    .glassEffect(.regular.tint(Colors.Main.secondaryAccent.opacity(0.1)), in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
                     .onboardingReveal(delay: 0.08)
 
                     VStack(spacing: .space12) {
@@ -122,6 +112,7 @@ extension LanguageSettingsScreen {
                 .padding(.top, .space16)
                 .padding(.bottom, .space24)
             }
+            .scrollIndicators(.hidden)
         }
     }
 }
@@ -136,6 +127,10 @@ extension LanguageSettingsScreen {
         let isSelected: Bool
         let action: () -> Void
 
+        private var shape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+        }
+
         var body: some View {
             Button(action: action) {
                 HStack(spacing: .space16) {
@@ -144,28 +139,19 @@ extension LanguageSettingsScreen {
 
                     Text(language.title)
                         .font(Theme.Typography.onboardingBody.weight(.bold))
-                        .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Text.title)
+                        .foregroundStyle(isSelected ? Theme.Colors.Main.primary : Theme.Colors.Text.title)
 
                     Spacer(minLength: .space8)
 
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(Theme.Colors.Main.background)
+                        .foregroundStyle(Theme.Colors.Main.primary)
                         .opacity(isSelected ? 1 : 0)
                 }
                 .padding(.space16)
                 .frame(maxWidth: .infinity, minHeight: 64)
-                .background(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.cardSurface)
-                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                .overlay(
-                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                        .stroke(
-                            isSelected ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle,
-                            lineWidth: isSelected ? 2 : 1
-                        )
-                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(GlassSelectionButtonStyle(shape: shape, isSelected: isSelected))
         }
     }
 
@@ -175,33 +161,28 @@ extension LanguageSettingsScreen {
         let isSelected: Bool
         let action: () -> Void
 
+        private var shape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+        }
+
         var body: some View {
             Button(action: action) {
                 HStack(spacing: .space16) {
                     Text(language.title)
                         .font(Theme.Typography.onboardingBody.weight(.bold))
-                        .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Text.title)
+                        .foregroundStyle(isSelected ? Theme.Colors.Main.primary : Theme.Colors.Text.title)
 
                     Spacer(minLength: .space8)
 
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(Theme.Colors.Main.background)
+                        .foregroundStyle(Theme.Colors.Main.primary)
                         .opacity(isSelected ? 1 : 0)
                 }
                 .padding(.space16)
                 .frame(maxWidth: .infinity, minHeight: 56)
-                .background(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.cardSurface)
-                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                .overlay(
-                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                        .stroke(
-                            isSelected ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle,
-                            lineWidth: isSelected ? 2 : 1
-                        )
-                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(GlassSelectionButtonStyle(shape: shape, isSelected: isSelected))
         }
     }
 }

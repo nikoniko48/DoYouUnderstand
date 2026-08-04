@@ -32,12 +32,7 @@ struct ExplanationScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    viewModel.actions.onTapBack?()
-                } label: {
-                    Image(systemName: "chevron.backward")
-                }
-                .accessibilityIdentifier("backButton")
+                BackButton { viewModel.actions.onTapBack?() }
             }
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: .space2) {
@@ -62,7 +57,11 @@ extension ExplanationScreen {
         
         // Triggers the text slide-in automatically
         @State private var showPrompt: Bool = false
-        
+
+        private var cardShape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+        }
+
         var body: some View {
             GeometryReader { proxy in
                 ZStack(alignment: .bottom) {
@@ -82,12 +81,7 @@ extension ExplanationScreen {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.space16)
-                            .background(Colors.Main.cardSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                    .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-                            )
+                            .glassEffect(.regular, in: cardShape)
                             .onboardingReveal(delay: 0.06)
 
                             // MARK: - Tone Progress Bar
@@ -161,12 +155,7 @@ extension ExplanationScreen {
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.space24)
-                                    .background(Colors.Main.cardSurface)
-                                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                                            .stroke(Colors.Main.primary, lineWidth: 2)
-                                    )
+                                    .glassEffect(.regular.tint(Colors.Main.primary.opacity(0.12)), in: cardShape)
                                     .transition(.asymmetric(insertion: .scale, removal: .opacity).combined(with: .opacity))
                                 }
                             }
@@ -177,6 +166,7 @@ extension ExplanationScreen {
                         .padding(.top, .space16)
                         .frame(minHeight: proxy.size.height)
                     }
+                    .scrollIndicators(.hidden)
                     
                     // MARK: - Floating Action Area
                     VStack(spacing: .space12) {
@@ -263,12 +253,7 @@ extension ExplanationScreen {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.space16)
-            .background(Theme.Colors.Main.cardSurface)
-            .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                    .stroke(Theme.Colors.Main.borderSubtle, lineWidth: 1)
-            )
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous))
         }
     }
 }

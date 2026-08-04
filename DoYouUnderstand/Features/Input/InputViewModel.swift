@@ -44,6 +44,7 @@ extension InputViewModel {
         case goBack
         case explain(ExplanationViewModel.Payload)
         case reply(ReplyViewModel.Payload)
+        case refine(String)
     }
 }
 
@@ -63,14 +64,15 @@ extension InputViewModel {
             case back
             case explain
             case reply
+            case refine
             case takePhoto
             case clearText
             case pasteText
         }
     }
-    
+
     private func setActions() {
-        
+
         actions.onAnalyse = { [weak self] in
             self?.analyse()
         }
@@ -101,6 +103,8 @@ extension InputViewModel {
                 switchAnalysisType(to: .reply)
             case .explain:
                 switchAnalysisType(to: .explain)
+            case .refine:
+                switchAnalysisType(to: .refine)
             case .takePhoto:
                 takePhoto()
             case .clearText:
@@ -152,14 +156,33 @@ extension InputViewModel {
                     self.historyService.save(.reply(payload))
                     self.stateModel.isLoaderPresented = false
                     self.output(.reply(payload))
+                case .refine:
+                    // Refine's own tone analysis happens on the destination
+                    // screen, not here - this step only needs to resolve the
+                    // final text (typed, or transcribed from a photo via our
+                    // existing OCR-capable `explain` call, whose tone
+                    // analysis we simply don't use here).
+                    let resolvedText: String
+                    if !images.isEmpty {
+                        let payload = try await GeminiService.explain(text: text, images: images)
+                        resolvedText = payload.extractedText
+                    } else {
+                        resolvedText = text
+                    }
+                    UsageLimiter.recordUsage()
+                    self.stateModel.isLoaderPresented = false
+                    self.output(.refine(resolvedText))
                 }
+            } catch GeminiService.ServiceError.rateLimited {
+                self.stateModel.isLoaderPresented = false
+                self.stateModel.limitReachedMessage = UsageLimiter.limitReachedMessage
             } catch {
                 self.stateModel.isLoaderPresented = false
                 self.stateModel.errorMessage = "Couldn't analyze that message. Please try again."
             }
         }
     }
-    
+
     private func goBack() {
         output(.goBack)
     }

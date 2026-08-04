@@ -22,9 +22,25 @@ enum Theme {
             static var primary: Color { ThemeManager.shared.appTheme.primary }
             static var borderSubtle: Color { ThemeManager.shared.appTheme.borderSubtle }
             static var accent: Color { ThemeManager.shared.appTheme.accent }
-            static var secondaryAccent: Color { ThemeManager.shared.appTheme.secondaryAccent }
+
+            /// These two are decorative accents used all over the app for
+            /// non-tone purposes (the Reply badge, the Language/Privacy
+            /// Policy row icons, etc.) - under the Mono tone palette they
+            /// used to keep showing their normal blue/green regardless,
+            /// which read as "Mono isn't actually monochrome". Whichever of
+            /// black/white actually contrasts against the current
+            /// background is used instead - "everything that can be
+            /// black/white" rather than inventing another in-between gray.
+            static var secondaryAccent: Color {
+                isMono ? monoNeutral : ThemeManager.shared.appTheme.secondaryAccent
+            }
             static var cardSurface: Color { ThemeManager.shared.appTheme.cardSurface }
-            static var success: Color { ThemeManager.shared.appTheme.success }
+            static var success: Color {
+                isMono ? monoNeutral : ThemeManager.shared.appTheme.success
+            }
+
+            private static var isMono: Bool { ThemeManager.shared.tonePalette == .mono }
+            private static var monoNeutral: Color { ThemeManager.shared.appTheme.background.contrastingForeground }
         }
 
         enum Text {

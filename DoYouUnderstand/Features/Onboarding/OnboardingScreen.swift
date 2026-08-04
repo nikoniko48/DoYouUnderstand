@@ -104,25 +104,21 @@ extension OnboardingScreen {
             } message: {
                 Text(LocalizedStringKey(stateModel.purchaseErrorMessage ?? ""))
             }
-            .sheet(isPresented: $isShowingCheckout) {
-                OnboardingScreen.CheckoutSheetView(
-                    stateModel: stateModel,
-                    actions: actions,
-                    isDiscountActive: isDiscountActive
-                )
-                .presentationDetents([.fraction(0.62), .large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(StaticData.Layout.cornerRadius)
-                // Without an explicit opaque background here, iOS 26 gives
-                // sheets their own translucent Liquid Glass chrome by
-                // default - which then shows through/behind our own glass
-                // CTA and card overlays as a second, uncoordinated blur
-                // layer (most visible as a mismatched strip below our
-                // content when it doesn't exactly fill the detent height).
-                // A flat, opaque background keeps exactly one glass layer
-                // in the picture: the one on our own components.
-                .presentationBackground(Theme.Colors.Main.background)
-                .interactiveDismissDisabled(stateModel.isPurchasing)
+            // A hand-rolled bottom panel, not a native `.sheet` - see
+            // `CheckoutSheetOverlay`'s own doc comment for why: this SDK's
+            // system sheet only comes back bottom-flush at the full-height
+            // `.large` detent, but the checkout step specifically needs its
+            // old *partial* height back, so a real sheet can't satisfy both
+            // asks at once here.
+            .overlay(alignment: .bottom) {
+                if isShowingCheckout {
+                    OnboardingScreen.CheckoutSheetOverlay(
+                        stateModel: stateModel,
+                        actions: actions,
+                        isDiscountActive: isDiscountActive,
+                        isPresented: $isShowingCheckout
+                    )
+                }
             }
         }
     }
@@ -135,16 +131,10 @@ extension OnboardingScreen.ContentView {
     @ViewBuilder
     private var header: some View {
         if stateModel.showsProgressHeader {
-            VStack(alignment: .leading, spacing: .space16) {
-                OnboardingScreen.OnboardingProgressBar(
-                    totalSteps: stateModel.progressStepCount,
-                    currentStep: stateModel.displayStepNumber - 1
-                )
-
-                Text(String(format: Loc.t("STEP %d OF %d"), stateModel.displayStepNumber, stateModel.progressStepCount))
-                    .font(Theme.Typography.badgeLabel)
-                    .foregroundStyle(Theme.Colors.Text.muted)
-            }
+            OnboardingScreen.OnboardingProgressBar(
+                totalSteps: stateModel.progressStepCount,
+                currentStep: stateModel.displayStepNumber - 1
+            )
         }
     }
 }
@@ -196,7 +186,14 @@ extension OnboardingScreen.ContentView {
 
     @ViewBuilder
     private var footer: some View {
-        switch stateModel.step {
+        // A small gap above the safe area/keyboard - without it, the button
+        // sits flush against whatever's directly below it, which is fine
+        // against the home indicator but reads as glued-on when the Name
+        // step's keyboard is up (SwiftUI's automatic keyboard avoidance
+        // shrinks the available space right up to the keyboard's own top
+        // edge, with no breathing room of its own).
+        Group {
+            switch stateModel.step {
         case .triggerMessage, .processing, .tactileHold:
             EmptyView()
 
@@ -221,6 +218,31 @@ extension OnboardingScreen.ContentView {
                 )
             )
 
+        case .theme:
+            // This step re-skins the whole screen live as the user taps a
+            // theme/palette option, including this button's own accent
+            // tint - the plain tinted glass used everywhere else can end
+            // up nearly the same color as the solid `Text.title`-filled
+            // selected theme card sitting right above it, reading as
+            // "blends in" rather than as a distinct button. A guaranteed-
+            // contrast ring (using the same title color that's always
+            // readable against this theme's own background, by definition)
+            // keeps it visually separate no matter which theme is active.
+            Button {
+                actions.onNext?()
+            } label: {
+                Text("Continue")
+                    .font(Theme.Typography.primaryButton)
+                    .foregroundStyle(Theme.Colors.Main.accent.contrastingForeground)
+            }
+            .buttonStyle(
+                LiquidGlassCTAButtonStyle(tint: Theme.Colors.Main.accent)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+                    .stroke(Theme.Colors.Text.title.opacity(0.3), lineWidth: 1.5)
+            )
+
         default:
             Button {
                 actions.onNext?()
@@ -237,7 +259,9 @@ extension OnboardingScreen.ContentView {
             )
             .disabled(!stateModel.isContinueEnabled)
             .animation(.easeInOut, value: stateModel.isContinueEnabled)
+            }
         }
+        .padding(.bottom, .space12)
     }
 }
 

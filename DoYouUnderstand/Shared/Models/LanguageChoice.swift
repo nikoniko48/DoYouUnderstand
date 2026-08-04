@@ -9,11 +9,8 @@ import Foundation
 
 /// Drives the app's actual display language via `LocalizationManager` (see
 /// that file) - independent of `ReplyLanguage`, which only controls the
-/// language Gemini writes replies in. Only `.english`, `.polish`, and
-/// `.spanish` have real translations in `Localizable.xcstrings` today;
-/// picking `.french`/`.german`/`.portuguese` falls back to English for any
-/// string not yet translated (a String Catalog's normal, safe behavior for
-/// a missing localization) until those are added.
+/// language Gemini writes replies in. All nine cases have real translations
+/// in `Localizable.xcstrings`.
 enum LanguageChoice: String, CaseIterable, Identifiable {
     case english
     case spanish
@@ -21,6 +18,9 @@ enum LanguageChoice: String, CaseIterable, Identifiable {
     case german
     case polish
     case portuguese
+    case japanese
+    case korean
+    case chinese
 
     var id: String { rawValue }
 
@@ -32,6 +32,9 @@ enum LanguageChoice: String, CaseIterable, Identifiable {
         case .german: return "Deutsch"
         case .polish: return "Polski"
         case .portuguese: return "Português"
+        case .japanese: return "日本語"
+        case .korean: return "한국어"
+        case .chinese: return "中文"
         }
     }
 
@@ -43,6 +46,9 @@ enum LanguageChoice: String, CaseIterable, Identifiable {
         case .german: return "🇩🇪"
         case .polish: return "🇵🇱"
         case .portuguese: return "🇵🇹"
+        case .japanese: return "🇯🇵"
+        case .korean: return "🇰🇷"
+        case .chinese: return "🇨🇳"
         }
     }
 
@@ -57,6 +63,9 @@ enum LanguageChoice: String, CaseIterable, Identifiable {
         case .german: return "de"
         case .polish: return "pl"
         case .portuguese: return "pt"
+        case .japanese: return "ja"
+        case .korean: return "ko"
+        case .chinese: return "zh-Hans"
         }
     }
 }

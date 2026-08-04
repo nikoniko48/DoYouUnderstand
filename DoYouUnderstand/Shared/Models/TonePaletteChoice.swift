@@ -30,9 +30,30 @@ enum TonePaletteChoice: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The real color for a given tone under this palette.
+    /// The real color for a given tone under this palette. Every palette's
+    /// hand-picked values were tuned by eye against a dark background and
+    /// never checked against Light theme's near-white one - measuring found
+    /// most of them well below WCAG's readability minimum there. Rather
+    /// than a second hand-tuned color map, this darkens (preserving hue) at
+    /// read time whenever the active theme's own background needs it - a
+    /// no-op against Dark/Terminal's black background, where these were
+    /// already legible.
     func color(for tone: Tone) -> Color {
-        Self.colorMap[self]?[tone] ?? tone.fallbackColor
+        let base = self == .mono ? Self.monoColor(for: tone) : (Self.colorMap[self]?[tone] ?? tone.fallbackColor)
+        return base.adjustedForContrast(against: ThemeManager.shared.appTheme.background)
+    }
+
+    /// Mono's original 16 near-identical grays washed out badly (several
+    /// were nearly invisible against Light theme's background, and even in
+    /// Dark they were too close together to read as meaningfully distinct).
+    /// A 3-tier cycling scheme fixed legibility but still showed up as "why
+    /// are there several different grays for different tones" - Mono means
+    /// every tone gets the exact same single, always-legible gray.
+    private static func monoColor(for tone: Tone) -> Color {
+        switch ThemeManager.shared.appTheme {
+        case .light: return Color(white: 0.35)
+        case .dark, .terminal: return Color(white: 0.65)
+        }
     }
 
     /// Preview bubbles shown on the onboarding tone-palette row - a fixed,
@@ -115,24 +136,8 @@ extension TonePaletteChoice {
             .dismissive: Color(red: 0.498, green: 0.659, blue: 1.0),
             .savage: Color(red: 1.0, green: 0.0, blue: 0.129)
         ],
-        .mono: [
-            .anxious: Color(white: 0.565),
-            .condescending: Color(white: 0.592),
-            .overEager: Color(white: 0.620),
-            .passiveAggressive: Color(white: 0.647),
-            .sarcastic: Color(white: 0.675),
-            .professional: Color(white: 0.702),
-            .assertive: Color(white: 0.729),
-            .friendly: Color(white: 0.757),
-            .playful: Color(white: 0.784),
-            .apologetic: Color(white: 0.812),
-            .empathetic: Color(white: 0.839),
-            .blunt: Color(white: 0.867),
-            .flirty: Color(white: 0.894),
-            .diplomatic: Color(white: 0.922),
-            .dismissive: Color(white: 0.949),
-            .savage: Color(white: 0.976)
-        ],
+        // .mono is handled separately by `monoColor(for:)` (3 theme-aware
+        // tiers instead of 16 hand-picked grays) - no entry needed here.
         // Phosphor-CRT palette designed to match the Terminal app theme -
         // greens/cyans/ambers only, no purple/pink hues that would clash
         // with a hacker aesthetic. All verified >7:1 WCAG contrast on black.

@@ -116,8 +116,24 @@ extension OnboardingScreen {
                 // was the actual source of the centering bug below (it
                 // triggered an extra, inconsistent layout pass that the
                 // GeometryReader-driven offset math didn't recover from).
+                //
+                // Deliberately NOT wrapped in `.onboardingReveal` (unlike its
+                // siblings above): this step's whole content already slides
+                // + fades in as one group via the ancestor `.onboardingStep`
+                // transition. `.onboardingReveal`'s own opacity/offset
+                // animation multiplies on top of that transition's opacity,
+                // and since the reveal starts from opacity 0 and only begins
+                // animating after its own `delay`, the combined opacity stays
+                // at zero for that whole delay window regardless of what the
+                // step transition is doing - so the carousel rendered
+                // invisible while the step transition finished settling, then
+                // "popped" in already near its resting offset and only
+                // finished its own fade from there. That two-phase pop was
+                // the reported "twitch, then opacity animation" glitch.
+                // Letting the step transition alone carry the carousel in
+                // avoids the compounded animation and slides it in smoothly
+                // with the rest of the step.
                 FeatureCarousel()
-                    .onboardingReveal(delay: 0.3)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -181,12 +197,16 @@ extension OnboardingScreen {
                 } label: {
                     Group {
                         if stateModel.isPurchasing {
-                            ProgressView()
-                                .tint(Theme.Colors.Main.accent.contrastingForeground)
+                            BouncingDotsLoader(color: Theme.Colors.Main.accent.contrastingForeground)
                         } else {
                             Text("Start Free Trial")
                         }
                     }
+                    // The dots loader's intrinsic height is much shorter
+                    // than the text's line height - without a fixed frame
+                    // here, the whole button visibly shrank the instant
+                    // purchasing started.
+                    .frame(height: 24)
                     .font(Theme.Typography.primaryButton)
                     .foregroundStyle(Theme.Colors.Main.accent.contrastingForeground)
                 }
@@ -242,10 +262,119 @@ extension OnboardingScreen {
             .padding(.top, .space24)
             .padding(.bottom, .space16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.Colors.Main.background)
             .sheet(isPresented: $isShowingPrivacyPolicy) {
                 NavigationStack {
                     PrivacyPolicyScreen(output: { _ in isShowingPrivacyPolicy = false })
+                }
+            }
+        }
+    }
+
+    /// A hand-rolled bottom panel standing in for the native `.sheet(...)`
+    /// this used to be. In this SDK, any `.presentationDetents` set other
+    /// than exactly `[.large]` - even a single `.fraction(_:)` on its own -
+    /// renders as a floating, all-corners-rounded card inset from *every*
+    /// screen edge rather than a classic bottom-attached sheet, so there's
+    /// no way to get both a partial height and a flush bottom edge through
+    /// the system API; only `[.large]` (full height) ever came back flush.
+    /// Since the checkout step specifically needs its old partial height
+    /// back *and* a flush bottom edge, this recreates just enough of a real
+    /// sheet by hand - a fixed height, dimmed backdrop, drag handle, and
+    /// swipe/tap-to-dismiss - without depending on the system's own
+    /// (here, all-or-nothing) sheet chrome.
+    struct CheckoutSheetOverlay: View {
+
+        let stateModel: OnboardingViewModel.StateModel
+        let actions: OnboardingViewModel.Actions
+        let isDiscountActive: Bool
+        @Binding var isPresented: Bool
+
+        // No fixed height here on purpose - `CheckoutSheetView`'s own
+        // content determines the panel's height, so there's never dead
+        // space below the buttons/links the way a fixed `.fraction(0.62)`-
+        // style height left whenever content didn't happen to fill it
+        // exactly. `hiddenOffset` only needs to be "comfortably larger than
+        // any real content could ever be" to push the panel fully off
+        // screen for the enter/exit animation - it doesn't need to match
+        // the panel's actual (now content-driven) height.
+        private static let hiddenOffset: CGFloat = UIScreen.main.bounds.height
+        private static let dismissDragThreshold: CGFloat = 120
+
+        @State private var isVisible = false
+        @State private var dragOffset: CGFloat = 0
+
+        private func dismiss() {
+            guard !stateModel.isPurchasing else { return }
+            withAnimation(.easeInOut(duration: 0.25)) {
+                isVisible = false
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                isPresented = false
+            }
+        }
+
+        var body: some View {
+            ZStack(alignment: .bottom) {
+                Color.black.opacity(isVisible ? 0.4 : 0)
+                    .ignoresSafeArea()
+                    .onTapGesture { dismiss() }
+
+                VStack(spacing: .space0) {
+                    Capsule()
+                        .fill(Theme.Colors.Main.borderSubtle)
+                        .frame(width: 36, height: 5)
+                        .padding(.top, .space8)
+                        .padding(.bottom, .space4)
+
+                    CheckoutSheetView(
+                        stateModel: stateModel,
+                        actions: actions,
+                        isDiscountActive: isDiscountActive
+                    )
+                }
+                .frame(maxWidth: .infinity)
+                // `.ignoresSafeArea` lives on the background fill itself,
+                // not on the whole VStack - applied to the VStack, it
+                // expands the VStack's own LAYOUT bounds (not just its
+                // paint) by the home-indicator safe-area inset, and since
+                // nothing inside was set up to fill that extra space, it
+                // just showed up as a blank gap below the real content.
+                // Scoping it to only the background lets the color still
+                // paint all the way to the true bottom edge without
+                // inflating the content's own layout size.
+                .background(
+                    UnevenRoundedRectangle(
+                        topLeadingRadius: StaticData.Layout.cornerRadius,
+                        bottomLeadingRadius: 0,
+                        bottomTrailingRadius: 0,
+                        topTrailingRadius: StaticData.Layout.cornerRadius,
+                        style: .continuous
+                    )
+                    .fill(Theme.Colors.Main.background)
+                    .ignoresSafeArea(edges: .bottom)
+                )
+                .offset(y: isVisible ? max(dragOffset, 0) : Self.hiddenOffset)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            guard !stateModel.isPurchasing else { return }
+                            dragOffset = value.translation.height
+                        }
+                        .onEnded { value in
+                            guard !stateModel.isPurchasing else { return }
+                            if value.translation.height > Self.dismissDragThreshold {
+                                dismiss()
+                            } else {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                                    dragOffset = 0
+                                }
+                            }
+                        }
+                )
+            }
+            .onAppear {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    isVisible = true
                 }
             }
         }
@@ -303,19 +432,19 @@ extension OnboardingScreen {
                         .foregroundStyle(isSelected ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle)
                 }
                 .padding(.space16)
-                // Selected state used to fully invert to solid black/white,
-                // which read as jarring next to the rest of the app's flat
-                // dark cards - a soft accent tint + border communicates
-                // selection just as clearly without the harsh flip, and
-                // keeps all text at normal (never opacity-reduced) contrast.
-                .background(isSelected ? Theme.Colors.Main.accent.opacity(0.12) : Theme.Colors.Main.cardSurface)
-                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                .overlay(
-                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                        .stroke(isSelected ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle, lineWidth: isSelected ? 2 : 1)
-                )
             }
-            .buttonStyle(.plain)
+            // Selected state used to fully invert to solid black/white,
+            // which read as jarring next to the rest of the app's flat
+            // dark cards - a soft accent tint communicates selection just
+            // as clearly without the harsh flip, and keeps all text at
+            // normal (never opacity-reduced) contrast.
+            .buttonStyle(
+                GlassSelectionButtonStyle(
+                    shape: RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous),
+                    isSelected: isSelected,
+                    selectedTint: Theme.Colors.Main.accent.opacity(0.12)
+                )
+            )
         }
     }
 
@@ -520,11 +649,23 @@ extension OnboardingScreen {
     struct FeatureCarousel: View {
 
         struct Item: Identifiable {
-            let id = UUID()
             let icon: String
             let title: String
             let subtitle: String
             let toneColor: Color
+            // Stable across re-renders, unlike a freshly-generated `UUID()`
+            // would be - `items` below is a computed `static var` (needed so
+            // titles re-resolve on a locale change), so a `let id = UUID()`
+            // would mint a BRAND NEW random id for every card on every single
+            // body re-evaluation (every auto-advance tick, every drag
+            // update). `ForEach(id:)` saw that as "all 5 old cards removed,
+            // 5 new cards inserted" each time, which applied a default
+            // insertion/removal transition (an opacity fade, with no
+            // position animation) on top of whatever explicit animation was
+            // running - the actual source of the reported "twitch, then
+            // opacity" glitch. `icon` is unique per item and doesn't change
+            // with locale, so it's a safe, stable identity.
+            var id: String { icon }
         }
 
         // Computed, not `static let` - see the note on `demoTones` above for
@@ -550,14 +691,15 @@ extension OnboardingScreen {
         private static let cardHeight: CGFloat = UIScreen.main.bounds.height * 0.34
         private static let cardSpacing: CGFloat = .space16
         private static let stride: CGFloat = cardWidth + cardSpacing
-        // FeatureCarouselCard casts a drop shadow (radius 10, y offset 6)
-        // that extends a few points past the card's own bounds - without
-        // this breathing room, the outer `.clipped()` (needed to hide
-        // off-screen cards during horizontal paging) was also slicing the
-        // top/bottom of that shadow off the visible card.
-        private static let verticalBleed: CGFloat = 20
+        // `FeatureCarouselCard`'s tone-colored border is a centered stroke,
+        // so half its line width sits outside the card's own frame - with no
+        // margin, the outer `.clipped()` (needed to hide off-screen cards
+        // during paging) sliced that sliver off the top/bottom of every
+        // card. A few points of vertical bleed gives it room to render fully.
+        private static let verticalBleed: CGFloat = 6
 
         @State private var currentIndex = Self.items.count / 2
+        @State private var autoAdvanceDirection = 1
         @State private var dragTranslation: CGFloat = 0
         @State private var hasUserInteracted = false
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -577,6 +719,30 @@ extension OnboardingScreen {
             }
             .frame(height: Self.cardHeight + Self.verticalBleed * 2)
             .clipped()
+            // The peeking neighbor cards either side of the centered one
+            // used to just vanish in a hard vertical line right at the
+            // `.clipped()` boundary - a background-colored gradient fading
+            // in from each edge softens that into a fade instead of a sharp
+            // cut, the same technique already used for the onboarding
+            // steps' top scroll edge.
+            .overlay(alignment: .leading) {
+                LinearGradient(
+                    colors: [Theme.Colors.Main.background, Theme.Colors.Main.background.opacity(0)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: 32)
+                .allowsHitTesting(false)
+            }
+            .overlay(alignment: .trailing) {
+                LinearGradient(
+                    colors: [Theme.Colors.Main.background, Theme.Colors.Main.background.opacity(0)],
+                    startPoint: .trailing,
+                    endPoint: .leading
+                )
+                .frame(width: 32)
+                .allowsHitTesting(false)
+            }
             .contentShape(Rectangle())
             .gesture(
                 DragGesture()
@@ -596,10 +762,25 @@ extension OnboardingScreen {
             .task {
                 guard !reduceMotion else { return }
                 while !Task.isCancelled {
-                    try? await Task.sleep(nanoseconds: 2_600_000_000)
+                    try? await Task.sleep(nanoseconds: 5_000_000_000)
                     guard !Task.isCancelled, !hasUserInteracted else { return }
+                    // Bounces back and forth (0→last→0→...) instead of
+                    // wrapping `% Self.items.count` straight from the last
+                    // index back to 0 - that wrap wasn't a "next card" step
+                    // at all, it was a full-width jump backward across every
+                    // card, which `withAnimation` dutifully animated as one
+                    // big reverse slide through the whole carousel. Reversing
+                    // direction at the ends means every tick is always
+                    // exactly one card over, so it always reads as a single
+                    // smooth slide.
                     withAnimation(.easeInOut(duration: 0.7)) {
-                        currentIndex = (currentIndex + 1) % Self.items.count
+                        let next = currentIndex + autoAdvanceDirection
+                        if Self.items.indices.contains(next) {
+                            currentIndex = next
+                        } else {
+                            autoAdvanceDirection *= -1
+                            currentIndex += autoAdvanceDirection
+                        }
                     }
                 }
             }
@@ -668,7 +849,6 @@ extension OnboardingScreen {
             .overlay(
                 shape.stroke(item.toneColor, lineWidth: 2)
             )
-            .shadow(color: .black.opacity(0.22), radius: 10, x: 0, y: 6)
         }
     }
 }

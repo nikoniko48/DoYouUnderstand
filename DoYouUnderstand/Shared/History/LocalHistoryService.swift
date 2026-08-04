@@ -39,6 +39,12 @@ final class LocalHistoryService: HistoryServiceProtocol {
         return record
     }
 
+    func update(id: String, payload: HistoryPayload) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+        records[index] = HistoryRecord(id: id, timestamp: records[index].timestamp, payload: payload)
+        persist()
+    }
+
     func delete(id: String) {
         records.removeAll { $0.id == id }
         persist()

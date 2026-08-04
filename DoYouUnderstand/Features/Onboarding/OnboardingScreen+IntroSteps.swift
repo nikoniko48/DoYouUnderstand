@@ -369,12 +369,25 @@ extension OnboardingScreen {
                     }
                     .onboardingReveal(delay: 0.24)
                 }
+                // Paired with the ScrollView's own `-16` padding below: the
+                // ScrollView's frame is widened by exactly as much as this
+                // insets the content, so everything lands at the same
+                // size/position it always had, but with real margin before
+                // the ScrollView's clip boundary - both for the selected
+                // chip's own native glass shadow (barely visible in Dark/
+                // Terminal, but clipped hard on the sides in Light) and for
+                // its press-and-hold grow.
+                .padding(.horizontal, 16)
             }
-            // The vertical ScrollView's default edge-to-edge clipping was
-            // slicing a sliver off the selected chip's border on the left
-            // and right - there's nothing meaningful to hide off-screen
-            // horizontally here, so disabling it is safe.
-            .scrollClipDisabled()
+            // `.scrollClipDisabled()` used to live here to stop the
+            // ScrollView from slicing the selected chip's border on the
+            // sides - but it disables ALL clipping, not just horizontal,
+            // which could let content scroll up and render on top of the
+            // shared progress-bar header above this step. The padding
+            // above fixes the side-clipping without needing that.
+            .padding(.horizontal, -16)
+            .onboardingScrollTopFade()
+            .scrollIndicators(.hidden)
         }
     }
 
@@ -384,26 +397,21 @@ extension OnboardingScreen {
         let isSelected: Bool
         let action: () -> Void
 
+        private var shape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+        }
+
         var body: some View {
             Button(action: action) {
                 Text(title)
                     .font(Theme.Typography.onboardingBody.weight(.bold))
-                    .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Text.title)
+                    .foregroundStyle(isSelected ? Theme.Colors.Main.primary : Theme.Colors.Text.title)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, .space16)
                     .padding(.horizontal, .space8)
-                    .background(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.cardSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                            .stroke(
-                                isSelected ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle,
-                                lineWidth: isSelected ? 2 : 1
-                            )
-                    )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(GlassSelectionButtonStyle(shape: shape, isSelected: isSelected))
         }
     }
 
@@ -464,11 +472,18 @@ extension OnboardingScreen {
                     }
                     .onboardingReveal(delay: 0.42)
                 }
+                // Paired with the ScrollView's own `-16` padding below - see
+                // `AgeStepView` for the full explanation of why this
+                // replaced `.scrollClipDisabled()` (which let scrolled
+                // content render on top of the shared progress-bar header
+                // above this step), and why it's 16pt rather than 8 (room
+                // for the card's own native glass shadow, not just its
+                // press-and-hold grow).
+                .padding(.horizontal, 16)
             }
-            // Same fix as `AgeStepView` - the vertical ScrollView's default
-            // edge clipping was slicing the selected tone-palette row's
-            // border (and, less noticeably, the theme card's) on the sides.
-            .scrollClipDisabled()
+            .padding(.horizontal, -16)
+            .onboardingScrollTopFade()
+            .scrollIndicators(.hidden)
         }
     }
 
@@ -477,6 +492,10 @@ extension OnboardingScreen {
         let theme: AppThemeChoice
         let isSelected: Bool
         let action: () -> Void
+
+        private var shape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+        }
 
         var body: some View {
             Button(action: action) {
@@ -507,11 +526,11 @@ extension OnboardingScreen {
                     VStack(alignment: .leading, spacing: .space4) {
                         Text(theme.title)
                             .font(Theme.Typography.onboardingBody.weight(.bold))
-                            .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Text.title)
+                            .foregroundStyle(isSelected ? Theme.Colors.Main.primary : Theme.Colors.Text.title)
 
                         Text(theme.subtitle)
                             .font(Theme.Typography.bodyText)
-                            .foregroundStyle(isSelected ? Theme.Colors.Main.background.opacity(0.7) : Theme.Colors.Text.muted)
+                            .foregroundStyle(Theme.Colors.Text.muted)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -519,22 +538,13 @@ extension OnboardingScreen {
 
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(Theme.Colors.Main.background)
+                        .foregroundStyle(Theme.Colors.Main.primary)
                         .opacity(isSelected ? 1 : 0)
                 }
                 .padding(.space16)
                 .frame(maxWidth: .infinity, minHeight: 84)
-                .background(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.cardSurface)
-                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                .overlay(
-                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                        .stroke(
-                            isSelected ? theme.previewBackground : Theme.Colors.Main.borderSubtle,
-                            lineWidth: isSelected ? 2 : 1
-                        )
-                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(GlassSelectionButtonStyle(shape: shape, isSelected: isSelected))
         }
     }
 
@@ -543,6 +553,10 @@ extension OnboardingScreen {
         let palette: TonePaletteChoice
         let isSelected: Bool
         let action: () -> Void
+
+        private var shape: RoundedRectangle {
+            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+        }
 
         var body: some View {
             Button(action: action) {
@@ -553,38 +567,26 @@ extension OnboardingScreen {
                                 .fill(color)
                                 .frame(width: 26, height: 26)
                                 .overlay(
-                                    Circle().stroke(
-                                        isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.background,
-                                        lineWidth: 2
-                                    )
+                                    Circle().stroke(Theme.Colors.Main.background, lineWidth: 2)
                                 )
                         }
                     }
 
                     Text(palette.title)
                         .font(Theme.Typography.onboardingBody.weight(.bold))
-                        .foregroundStyle(isSelected ? Theme.Colors.Main.background : Theme.Colors.Text.title)
+                        .foregroundStyle(isSelected ? Theme.Colors.Main.primary : Theme.Colors.Text.title)
 
                     Spacer(minLength: .space8)
 
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(Theme.Colors.Main.background)
+                        .foregroundStyle(Theme.Colors.Main.primary)
                         .opacity(isSelected ? 1 : 0)
                 }
                 .padding(.space16)
                 .frame(maxWidth: .infinity, minHeight: 64)
-                .background(isSelected ? Theme.Colors.Text.title : Theme.Colors.Main.cardSurface)
-                .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-                .overlay(
-                    RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                        .stroke(
-                            isSelected ? Theme.Colors.Main.accent : Theme.Colors.Main.borderSubtle,
-                            lineWidth: isSelected ? 2 : 1
-                        )
-                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(GlassSelectionButtonStyle(shape: shape, isSelected: isSelected))
         }
     }
 

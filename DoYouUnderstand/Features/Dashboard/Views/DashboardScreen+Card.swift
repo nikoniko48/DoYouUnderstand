@@ -9,26 +9,30 @@ import SwiftUI
 
 struct HistoryCardView: View {
     let item: HistoryItem
-    
+
     typealias Typography = Theme.Typography
     typealias Colors = Theme.Colors
-    
+
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius, style: .continuous)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: .space12) {
             
             HStack(alignment: .center, spacing: .space0) {
                 
                 HStack(spacing: .space4) {
-                    Text(item.tone.displayName.uppercased())
+                    Text(item.toneBadge.label.uppercased())
                         .font(Typography.badgeLabel)
-                        .foregroundStyle(item.tone.color)
+                        .foregroundStyle(item.toneBadge.color)
                         .padding(.horizontal, .space8)
                         .padding(.vertical, .space4)
-                        .background(item.tone.color.opacity(0.12))
+                        .background(item.toneBadge.color.opacity(0.12))
                         .clipShape(Capsule())
                         .overlay(
                             Capsule()
-                                .stroke(item.tone.color.opacity(0.3), lineWidth: 1)
+                                .stroke(item.toneBadge.color.opacity(0.3), lineWidth: 1)
                         )
                     
                     Text(item.type.displayName.uppercased())
@@ -71,11 +75,7 @@ struct HistoryCardView: View {
             .foregroundStyle(Colors.Text.muted)
         }
         .padding(.space16)
-        .background(Colors.Main.cardSurface)
-        .clipShape(RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: StaticData.Layout.cornerRadius)
-                .stroke(Colors.Main.borderSubtle, lineWidth: 1)
-        )
+        .glassEffect(.regular.interactive(), in: shape)
+        .contentShape(shape)
     }
 }
